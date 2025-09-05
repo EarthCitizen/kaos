@@ -1,0 +1,8 @@
+name: "Build Kaos"
+run-name: "Run by ${{ github.actor }}"
+on: [push]
+jobs:
+  Test:
+    runs-on: erlang:28
+    steps:
+      - run: rebar3 test
