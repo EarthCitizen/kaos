@@ -1,0 +1,420 @@
+-module(kaos_test).
+-include_lib("eunit/include/eunit.hrl").
+-include("kaos_test.hrl").
+
+format_string(Format, Args) -> lists:flatten(io_lib:format(Format, Args)).
+
+unique(Fn, List) ->
+    lists:sort(lists:uniq(lists:map(Fn, List))).
+
+unique(List) ->
+    lists:sort(lists:uniq(List)).
+
+unique_nested(Fn, List) ->
+    lists:sort(lists:uniq(lists:flatten(lists:map(Fn, List)))).
+
+generate_different_seed_test_() ->
+    {ok, Values1} = kaos:generate(kaos:integer(1, 9_000_000), 909, 1_000_000),
+    {ok, Values2} = kaos:generate(kaos:integer(1, 9_000_000), 450, 1_000_000),
+    [
+        {
+            "Different seeds generate different values",
+            ?_assertNotEqual(Values1, Values2)
+        }
+    ].
+
+generate_same_seed_test_() ->
+    {ok, Values1} = kaos:generate(kaos:integer(1, 9_000_000), 909, 1_000_000),
+    {ok, Values2} = kaos:generate(kaos:integer(1, 9_000_000), 909, 1_000_000),
+    [
+        {
+            "Same seeds generate same values",
+            ?_assertEqual(Values1, Values2)
+        }
+    ].
+
+all_test_() ->
+    AllOfGen = kaos:all([kaos:const(100), kaos:const(200)]),
+    {ok, All} = kaos:generate(AllOfGen, 1000, 3),
+    GetXY = fun (X, Y, List) -> lists:nth(Y, lists:nth(X, List)) end,
+    [
+        ?_assertEqual(GetXY(1, 1, All), 100),
+        ?_assertEqual(GetXY(1, 2, All), 200),
+        ?_assertEqual(GetXY(2, 1, All), 100),
+        ?_assertEqual(GetXY(2, 2, All), 200),
+        ?_assertEqual(GetXY(3, 1, All), 100),
+        ?_assertEqual(GetXY(3, 2, All), 200)
+    ].
+
+array_test_() ->
+    ElementsGen = kaos:cycle([
+        kaos:const(100),
+        kaos:const(200),
+        kaos:const(300),
+        kaos:const(400),
+        kaos:const(500),
+        kaos:const(600)
+    ]),
+    ArrGen1 = kaos:array(kaos:const(1), ElementsGen),
+    ArrGen2 = kaos:array(kaos:const(3), ElementsGen),
+    ArrGen3 = kaos:array(kaos:const(6), ElementsGen),
+    {ok, [Arr1]} = kaos:generate(ArrGen1, 1001, 1),
+    {ok, [Arr2]} = kaos:generate(ArrGen2, 1002, 1),
+    {ok, [Arr3]} = kaos:generate(ArrGen3, 1003, 1),
+    [
+        ?_assertEqual(array:size(Arr1), 1),
+        ?_assertEqual(array:get(0, Arr1), 100),
+
+        ?_assertEqual(array:size(Arr2), 3),
+        ?_assertEqual(array:get(0, Arr2), 100),
+        ?_assertEqual(array:get(1, Arr2), 200),
+        ?_assertEqual(array:get(2, Arr2), 300),
+
+        ?_assertEqual(array:size(Arr3), 6),
+        ?_assertEqual(array:get(0, Arr3), 100),
+        ?_assertEqual(array:get(1, Arr3), 200),
+        ?_assertEqual(array:get(2, Arr3), 300),
+        ?_assertEqual(array:get(3, Arr3), 400),
+        ?_assertEqual(array:get(4, Arr3), 500),
+        ?_assertEqual(array:get(5, Arr3), 600)
+    ].
+
+ascii_char_test_() ->
+    {ok, All} = kaos:generate(kaos:ascii_char(), 101, 10_000),
+    AllInRange = lists:uniq(
+        lists:map(
+            fun (E) -> E >= 33 andalso E =< 126 end,
+            lists:uniq(All)
+        )
+    ),
+    {ok, Repeat} = kaos:generate(kaos:ascii_char(), 101, 10_000),
+    {ok, Other} = kaos:generate(kaos:ascii_char(), 201, 10_000),
+    [
+        ?_assertEqual(10_000, length(All)),
+        ?_assertEqual([true], AllInRange),
+        % Same seed generates same values
+        ?_assertEqual(All, Repeat),
+        % Different seed generates different values
+        ?_assertNotEqual(All, Other)
+    ].
+
+bitstring_bad_size_test_() -> ?_generic_bad_size_test_(kaos:bitstring(kaos:boolean())).
+
+bitstring_test_() ->
+    {
+        generator,
+        fun () ->
+            lists:map(
+                fun (Size) ->
+                    {ok, [Bitstring]} = kaos:generate(kaos:bitstring(kaos:const(Size)), 909, 1),
+                    [
+                        {
+                            format_string("Expected bitstring to have ~p bits", [Size]),
+                            ?_assertEqual(Size, bit_size(Bitstring))
+                        }
+                    ]
+                end,
+                [0, 1, 3, 12, 97, 121, 12_003, 120_000_001]
+            )
+        end
+    }.
+
+binary_bad_size_test_() -> ?_generic_bad_size_test_(kaos:binary(kaos:boolean(), kaos:const(1))).
+
+boolean_test_() ->
+    Count = 1_000_000,
+    {ok, AllValues} = kaos:generate(kaos:boolean(), 303, Count),
+    UniqueValues = unique(AllValues),
+    [
+        {
+            format_string("Generated ~p booleans", [Count]),
+            ?_assertEqual(Count, length(AllValues))
+        },
+        {
+            "All values true or false",
+            ?_assertEqual([false, true], UniqueValues)
+        }
+    ].
+
+choose_test_() ->
+    Count = 1_000_000,
+    GenChoose = kaos:choose([kaos:const(1), kaos:const(2), kaos:const(3)]),
+    {ok, Values} = kaos:generate(GenChoose, 909, Count),
+    [
+        ?_assertEqual(Count, length(Values)),
+        ?_assertEqual([1, 2, 3], unique(Values))
+    ].
+
+const_test_() ->
+    {ok, A} = kaos:generate(kaos:const(1), 909, 3),
+    {ok, B} = kaos:generate(kaos:const(1), 909, 9),
+    [
+        ?_assertEqual([1, 1, 1], A),
+        ?_assertEqual([1, 1, 1, 1, 1, 1, 1, 1, 1], B)
+    ].
+
+cycle_test_() ->
+    Gen = kaos:cycle([
+        kaos:const(1),
+        kaos:const(true),
+        kaos:const("abc")
+    ]),
+    {ok, Over} = kaos:generate(Gen, 505, 7),
+    {ok, Under} = kaos:generate(Gen, 505, 2),
+    {ok, One} = kaos:generate(Gen, 505, 1),
+    [
+        ?_assertEqual([1, true, "abc", 1, true, "abc", 1], Over),
+        ?_assertEqual([1, true], Under),
+        ?_assertEqual([1], One),
+        ?_assertError(function_clause, kaos:cycle([]))
+    ].
+
+dict_bad_size_test_() -> ?_generic_bad_size_test_(kaos:dict(kaos:boolean(), kaos:const(2), kaos:const(1))).
+
+dict_test_() -> ?_generic_key_value_test_(
+    fun kaos:dict/3,
+    fun dict:size/1,
+    fun dict:fetch_keys/1,
+    fun (D) -> [Value || {_, Value} <:- dict:to_list(D)] end
+).
+
+gb_set_bad_size_test_() -> ?_generic_bad_size_test_(kaos:gb_set(kaos:boolean(), kaos:const(1))).
+
+gb_set_test_() -> ?_generic_set_test_(fun kaos:gb_set/2, fun gb_sets:to_list/1).
+
+gb_tree_bad_size_test_() -> ?_generic_bad_size_test_(kaos:gb_tree(kaos:boolean(), kaos:const(2), kaos:const(1))).
+
+gb_tree_test_() -> ?_generic_key_value_test_(fun kaos:gb_tree/3, fun gb_trees:size/1, fun gb_trees:keys/1, fun gb_trees:values/1).
+
+integer_test_() ->
+    {
+        generator,
+        fun () ->
+            Count = 1_000_000,
+            Ranges = [
+                {-9999, 9999},
+                {0, 10},
+                {-10, 0},
+                {100_000, 200_000}
+            ],
+            lists:map(
+                fun ({Min, Max}) ->
+                    Gen = kaos:integer(Min, Max),
+
+                    {ok, Values} = kaos:generate(Gen, 707, Count),
+
+                    InRange = unique(fun (E) -> E >= Min andalso E =< Max end, Values),
+                    RangeDescr = format_string("Range ~p to ~p: ", [Min, Max]),
+                    [
+                        {RangeDescr ++ "Expected Count Sampled", ?_assertEqual(Count, length(Values))},
+                        {RangeDescr ++ "All Values in Range", ?_assertEqual([true], InRange)}
+                    ]
+                end,
+                Ranges
+            )
+        end
+    }.
+
+list_bad_size_test_() ->
+    ?_assertMatch(
+        {error, {badarg, "Size generator must provide an integer"}, _},
+        kaos:generate(
+            kaos:list(kaos:boolean(), kaos:const(1)),
+            909,
+            1
+        )
+    ).
+
+list_test_() ->
+    {
+        generator,
+        fun () ->
+            Count = 1_000_000,
+            Params = [
+                {{1, 3}, {4, 10}},
+                {{10, 20}, {100, 500}}
+            ],
+            lists:map(
+                fun ({{SizeMin, SizeMax}, {ValueMin, ValueMax}}) ->
+                    SizeGen = kaos:integer(SizeMin, SizeMax),
+                    ValueGen = kaos:integer(ValueMin, ValueMax),
+                    ListsGen = kaos:list(SizeGen, ValueGen),
+
+                    {ok, Lists} = kaos:generate(ListsGen, 9, Count),
+
+                    Sizes = unique(fun length/1, Lists),
+                    Values = unique(lists:flatten(Lists)),
+                    [
+                        {
+                            format_string("Generated ~p lists", [Count]),
+                            ?_assertEqual(Count, length(Lists))
+                        },
+                        {
+                            format_string("Sizes are from ~p to ~p", [SizeMin, SizeMax]),
+                            ?_assertEqual(lists:seq(SizeMin, SizeMax), Sizes)
+                        },
+                        {
+                            format_string("Values are from ~p to ~p", [ValueMin, ValueMax]),
+                            ?_assertEqual(lists:seq(ValueMin, ValueMax), Values)
+                        }
+                    ]
+                end,
+                Params
+            )
+        end
+    }.
+
+map_bad_size_test_() -> ?_generic_bad_size_test_(kaos:map(kaos:boolean(), kaos:const(2), kaos:const(1))).
+
+map_test_() -> ?_generic_key_value_test_(fun kaos:map/3, fun maps:size/1, fun maps:keys/1, fun maps:values/1).
+
+orddict_bad_size_test_() -> ?_generic_bad_size_test_(kaos:orddict(kaos:boolean(), kaos:const(2), kaos:const(1))).
+
+orddict_test_() -> ?_generic_key_value_test_(
+    fun kaos:orddict/3,
+    fun orddict:size/1,
+    fun orddict:fetch_keys/1,
+    fun (D) -> [Value || {_, Value} <:- orddict:to_list(D)] end
+).
+
+ordset_bad_size_test_() -> ?_generic_bad_size_test_(kaos:ordset(kaos:boolean(), kaos:const(1))).
+
+ordset_test_() -> ?_generic_set_test_(fun kaos:ordset/2, fun ordsets:to_list/1).
+
+set_bad_size_test_() -> ?_generic_bad_size_test_(kaos:set(kaos:boolean(), kaos:const(1))).
+
+set_test_() -> ?_generic_set_test_(fun kaos:set/2, fun sets:to_list/1).
+
+% string_of_test_() ->
+%     {
+%         generate,
+%         fun () ->
+%             Count = 1_000_000,
+%             % StringGen = kaos:string_of(kaos:const(1), )
+%             [
+
+%             ]
+%         end
+%     }.
+
+tuple_test_() ->
+    {
+        generator,
+        fun () ->
+            Count = 1_000_000,
+            Params = lists:seq(0, 24),
+            lists:map(
+                fun (Size) ->
+                    ExpectedValues = case Size of
+                        0 -> [];
+                        _ -> lists:seq(1, Size)
+                    end,
+
+                    TupleGen = kaos:tuple(lists:map(fun kaos:const/1, ExpectedValues)),
+
+                    {ok, Tuples} = kaos:generate(TupleGen, 9, Count),
+
+                    ActualValues = unique(fun tuple_to_list/1, Tuples),
+                    [
+                        {
+                            format_string("Generated ~p of ~p element tuples", [Count, Size]),
+                            ?_assertEqual(Count, length(Tuples))
+                        },
+                        {
+                            format_string("All ~p element tuples contain expected values", [Size]),
+                            ?_assertEqual([ExpectedValues], ActualValues)
+                        }
+                    ]
+                end,
+                Params
+            )
+        end
+    }.
+
+weighted_test_() ->
+    {
+        generator,
+        fun () ->
+            Count = 1_000_000,
+            Params = [
+                {
+                    #{2 => 200_000, 8 => 800_000},
+                    [{20, kaos:const(2)}, {80, kaos:const(8)}]
+
+                },
+                {
+                    #{10 => 100_000, 30 => 300_000, 20 => 200_000, 35 => 350_000, 5 => 50_000},
+                    [{10, kaos:const(10)}, {30, kaos:const(30)}, {20, kaos:const(20)}, {35, kaos:const(35)}, {5, kaos:const(5)}]
+
+                }
+            ],
+            lists:map(
+                fun ({ExpectedCounts, WeightedGens}) ->
+                    {ok, Samples} = kaos:generate(kaos:weighted(WeightedGens), 909, Count),
+                    GroupedSamples = maps:groups_from_list(fun (X) -> X end, Samples),
+                    [
+                        {
+                            "Expected samples generated",
+                            ?_assertEqual(Count, length(Samples))
+                        },
+                        lists:map(
+                            fun (ValueKey) ->
+                                #{ValueKey := ExpectedCount} = ExpectedCounts,
+                                #{ValueKey := ActualValues} = GroupedSamples,
+                                ExpectedPercentage = ExpectedCount / Count,
+                                ActualCount = length(ActualValues),
+                                ActualPercentage = ActualCount / Count,
+                                Tolerance = 0.0015,
+                                [
+                                    {
+                                        format_string("Percent of samples ~p to expected to be within ~p of ~p~n", [ActualPercentage, Tolerance, ExpectedPercentage]),
+                                        ?_assertEqualWithin(ExpectedPercentage, ActualPercentage, Tolerance)
+                                    }
+                                ]
+                            end,
+                            maps:keys(ExpectedCounts)
+                        )
+                    ]
+                end,
+                Params
+            )
+        end
+    }.
+
+mod_filter_test_() ->
+    Values = lists:seq(1, 20),
+    Gens = lists:map(fun kaos:const/1, Values),
+    FiveGen = kaos:mod_filter(fun (X) -> (X rem 5) =:= 0 end, kaos:cycle(Gens)),
+    ThreeGen = kaos:mod_filter(fun (X) -> (X rem 3) =:= 0 end, kaos:cycle(Gens)),
+    {ok, Fives} = kaos:generate(FiveGen, 1212, 4),
+    {ok, Threes} = kaos:generate(ThreeGen, 1212, 6),
+    [
+        ?_assertEqual([5, 10, 15, 20], Fives),
+        ?_assertEqual([3, 6, 9, 12, 15, 18], Threes)
+    ].
+
+mod_flat_map_test_() ->
+    SizeGen = kaos:const(3),
+    FlatMapGen = kaos:mod_flat_map(
+        fun (S) -> kaos:list(kaos:const(S), kaos:const("A")) end,
+        SizeGen
+    ),
+    {ok, Values} = kaos:generate(FlatMapGen, 999, 3),
+    [
+        ?_assertEqual([["A", "A", "A"], ["A", "A", "A"], ["A", "A", "A"]], Values)
+    ].
+
+
+mod_map_test_() ->
+    ValueGen = kaos:const(3),
+    MapGen = kaos:mod_map(
+        fun (S) -> S * 10 end,
+        ValueGen
+    ),
+    {ok, Values} = kaos:generate(MapGen, 999, 3),
+    [
+        {
+            format_string("Mapped all generated values to 30", []),
+            ?_assertEqual([30, 30, 30], Values)
+        }
+    ].
