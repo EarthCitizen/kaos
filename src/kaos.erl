@@ -16,6 +16,7 @@
     gb_set/2,
     gb_tree/3,
     generate/3,
+    generate/5,
     integer/2,
     iterate/1,
     list/2,
@@ -231,43 +232,74 @@ mod_flat_map(Fun, Gen) when is_function(Fun, 1) -> #mod_flat_map{f = Fun, gen = 
 mod_map(Fun, Gen) when is_function(Fun, 1) -> #mod_map{f = Fun, gen = Gen}.
 
 -spec generate(gen(), integer(), pos_integer()) -> generate_response().
-generate(Gen, Seed, Count) when Count > 0 ->
+generate(Gen, Seed, Count) when is_integer(Count), Count > 0 ->
+    Result = generate(
+        Gen,
+        Seed,
+        Count,
+        fun (Sample, Acc) -> [Sample | Acc] end,
+        []
+    ),
+    case Result of
+        {ok, SampleList} -> {ok, lists:reverse(SampleList)};
+        Error -> Error
+    end.
+
+generate(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
     process_flag(trap_exit, true),
     Self = self(),
     % Need to user spawn monitor
-    WorkerPid = spawn_link(fun() -> generate_worker(Seed) end),
-    WorkerPid ! {Gen, Count, Self},
-    CleanUpWorker =
+    WorkerPid = spawn_link(
         fun () ->
-           process_flag(trap_exit, false),
-           unlink(WorkerPid),
-           exit(WorkerPid, normal)
-        end,
-    receive
-        {'EXIT', _, Error} -> {error, Error};
-        Error = {error, _, _} -> CleanUpWorker(), Error;
-        Result = {ok, _}   -> CleanUpWorker(), Result
-    after 30_000 ->
-        {error, timeout}
-    end.
-
-generate_worker(Seed) ->
-    rand:seed(exsss, Seed),
-    RunLoop =
-        fun Loop() ->
+            generate_worker(Gen, Seed, Count, Self, Merge, Acc)
+        end
+    ),
+    CleanUpMessages =
+        fun Loop () ->
             receive
-                {Gen, Count, To} ->
-                    try
-                        Samples = [generate_one(Gen) || _ <:- lists:seq(1, Count)],
-                        To ! {ok, Samples}
-                    catch
-                        _:Error:Stacktrace ->
-                            To ! {error, Error, Stacktrace}
-                    end,
-                    Loop()
+                _ -> Loop()
+            after 0 ->
+                ok
             end
         end,
-    RunLoop().
+    CleanUpWorker =
+        fun () ->
+            process_flag(trap_exit, false),
+            unlink(WorkerPid),
+            exit(WorkerPid, normal),
+            CleanUpMessages()
+        end,
+    WaitReceive =
+        fun Loop () ->
+            receive
+                {'EXIT', _, normal} -> Loop();
+                {'EXIT', _, Error} -> CleanUpMessages(), {error, Error};
+                Error = {error, _, _} -> CleanUpWorker(), Error;
+                Result = {ok, _} -> CleanUpWorker(), Result
+            after 30_000 ->
+                CleanUpWorker(),
+                {error, timeout}
+            end
+        end,
+    WaitReceive().
+
+generate_worker(Gen, Seed, Count, To, Merge, Acc) when is_integer(Count), Count > 0 ->
+    rand:seed(exsss, Seed),
+    RunLoop =
+        fun Loop(RemainingCount, LoopAcc) ->
+            case RemainingCount of
+                0 -> LoopAcc;
+                _ ->
+                    Sample = generate_one(Gen),
+                    Loop(RemainingCount - 1, Merge(Sample, LoopAcc))
+            end
+        end,
+    try
+        To ! {ok, RunLoop(Count, Acc)}
+    catch
+        _:Error:Stacktrace ->
+            To ! {error, Error, Stacktrace}
+    end.
 
 generate_one(#gen_all{gens = Gens}) ->
     lists:map(fun generate_one/1, Gens);
@@ -418,7 +450,7 @@ generate_one(#gen_tuple{gens = Gens}) ->
             list_to_tuple(Values)
     end;
 generate_one(#gen_weighted{max_bound = MaxBound, weighted_gens = WeightedGens}) ->
-    Selector = rand:uniform(MaxBound),
+    Selector = generate_one(integer(1, MaxBound)),
     {value, {_, FoundGen}} =
         lists:search(fun({Bound, _}) -> Selector =< Bound end, WeightedGens),
     generate_one(FoundGen);

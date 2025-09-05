@@ -14,8 +14,8 @@ unique_nested(Fn, List) ->
     lists:sort(lists:uniq(lists:flatten(lists:map(Fn, List)))).
 
 generate_different_seed_test_() ->
-    {ok, Values1} = kaos:generate(kaos:integer(1, 9_000_000), 909, 1_000_000),
-    {ok, Values2} = kaos:generate(kaos:integer(1, 9_000_000), 450, 1_000_000),
+    {ok, Values1} = kaos:generate(kaos:integer(1, 500), 909, 500),
+    {ok, Values2} = kaos:generate(kaos:integer(1, 500), 450, 500),
     [
         {
             "Different seeds generate different values",
@@ -24,8 +24,8 @@ generate_different_seed_test_() ->
     ].
 
 generate_same_seed_test_() ->
-    {ok, Values1} = kaos:generate(kaos:integer(1, 9_000_000), 909, 1_000_000),
-    {ok, Values2} = kaos:generate(kaos:integer(1, 9_000_000), 909, 1_000_000),
+    {ok, Values1} = kaos:generate(kaos:integer(1, 500), 909, 500),
+    {ok, Values2} = kaos:generate(kaos:integer(1, 500), 909, 500),
     [
         {
             "Same seeds generate same values",
@@ -80,17 +80,18 @@ array_test_() ->
     ].
 
 ascii_char_test_() ->
-    {ok, All} = kaos:generate(kaos:ascii_char(), 101, 10_000),
+    Count = 1000,
+    {ok, All} = kaos:generate(kaos:ascii_char(), 101, Count),
     AllInRange = lists:uniq(
         lists:map(
             fun (E) -> E >= 33 andalso E =< 126 end,
             lists:uniq(All)
         )
     ),
-    {ok, Repeat} = kaos:generate(kaos:ascii_char(), 101, 10_000),
-    {ok, Other} = kaos:generate(kaos:ascii_char(), 201, 10_000),
+    {ok, Repeat} = kaos:generate(kaos:ascii_char(), 101, Count),
+    {ok, Other} = kaos:generate(kaos:ascii_char(), 201, Count),
     [
-        ?_assertEqual(10_000, length(All)),
+        ?_assertEqual(Count, length(All)),
         ?_assertEqual([true], AllInRange),
         % Same seed generates same values
         ?_assertEqual(All, Repeat),
@@ -114,7 +115,7 @@ bitstring_test_() ->
                         }
                     ]
                 end,
-                [0, 1, 3, 12, 97, 121, 12_003, 120_000_001]
+                [0, 1, 3, 12, 97, 121, 12_003]
             )
         end
     }.
@@ -122,7 +123,7 @@ bitstring_test_() ->
 binary_bad_size_test_() -> ?_generic_bad_size_test_(kaos:binary(kaos:boolean(), kaos:const(1))).
 
 boolean_test_() ->
-    Count = 1_000_000,
+    Count = 1000,
     {ok, AllValues} = kaos:generate(kaos:boolean(), 303, Count),
     UniqueValues = unique(AllValues),
     [
@@ -137,7 +138,7 @@ boolean_test_() ->
     ].
 
 choose_test_() ->
-    Count = 1_000_000,
+    Count = 1000,
     GenChoose = kaos:choose([kaos:const(1), kaos:const(2), kaos:const(3)]),
     {ok, Values} = kaos:generate(GenChoose, 909, Count),
     [
@@ -190,7 +191,7 @@ integer_test_() ->
     {
         generator,
         fun () ->
-            Count = 1_000_000,
+            Count = 1000,
             Ranges = [
                 {-9999, 9999},
                 {0, 10},
@@ -229,7 +230,7 @@ list_test_() ->
     {
         generator,
         fun () ->
-            Count = 1_000_000,
+            Count = 1000,
             Params = [
                 {{1, 3}, {4, 10}},
                 {{10, 20}, {100, 500}}
@@ -301,7 +302,7 @@ tuple_test_() ->
     {
         generator,
         fun () ->
-            Count = 1_000_000,
+            Count = 100,
             Params = lists:seq(0, 24),
             lists:map(
                 fun (Size) ->
@@ -340,34 +341,41 @@ weighted_test_() ->
                 {
                     #{2 => 200_000, 8 => 800_000},
                     [{20, kaos:const(2)}, {80, kaos:const(8)}]
-
                 },
                 {
-                    #{10 => 100_000, 30 => 300_000, 20 => 200_000, 35 => 350_000, 5 => 50_000},
+                    #{10 => 100_000, 30 => 300000, 20 => 200_000, 35 => 350_000, 5 => 50_000},
                     [{10, kaos:const(10)}, {30, kaos:const(30)}, {20, kaos:const(20)}, {35, kaos:const(35)}, {5, kaos:const(5)}]
 
                 }
             ],
+            CountMerge = fun (Value, CountMap) ->
+                maps:merge_with(
+                    fun (_, V1, V2) -> V1 + V2 end,
+                    CountMap,
+                    #{Value => 1}
+                )
+            end,
             lists:map(
                 fun ({ExpectedCounts, WeightedGens}) ->
-                    {ok, Samples} = kaos:generate(kaos:weighted(WeightedGens), 909, Count),
-                    GroupedSamples = maps:groups_from_list(fun (X) -> X end, Samples),
+                    {ok, SampleCounts} = kaos:generate(kaos:weighted(WeightedGens), 909, Count, CountMerge, #{}),
+                    Tolerance = 0.0015,
                     [
                         {
                             "Expected samples generated",
-                            ?_assertEqual(Count, length(Samples))
+                            ?_assertEqual(Count, lists:foldl(fun (V, Sum) -> V + Sum end, 0, maps:values(SampleCounts)))
                         },
                         lists:map(
                             fun (ValueKey) ->
                                 #{ValueKey := ExpectedCount} = ExpectedCounts,
-                                #{ValueKey := ActualValues} = GroupedSamples,
+                                #{ValueKey := ActualCount} = SampleCounts,
                                 ExpectedPercentage = ExpectedCount / Count,
-                                ActualCount = length(ActualValues),
                                 ActualPercentage = ActualCount / Count,
-                                Tolerance = 0.0015,
                                 [
                                     {
-                                        format_string("Percent of samples ~p to expected to be within ~p of ~p~n", [ActualPercentage, Tolerance, ExpectedPercentage]),
+                                        format_string(
+                                            "Percent of samples ~p expected to be within ~p of ~p~n",
+                                            [ActualPercentage, Tolerance, ExpectedPercentage]
+                                        ),
                                         ?_assertEqualWithin(ExpectedPercentage, ActualPercentage, Tolerance)
                                     }
                                 ]

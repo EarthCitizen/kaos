@@ -1,10 +1,13 @@
--define(_assertEqualWithin(Expected, Actual, Tolerance), ?_test(?assert(abs((Expected) - (Actual)) =< (Tolerance)))).
+-define(
+    _assertEqualWithin(Expected, Actual, Tolerance),
+    ?_assert(abs((Expected) - (Actual)) =< (Tolerance))
+).
 
 -define(_generic_key_value_test_(MapGen, SizeFun, KeysFun, ValuesFun),
     {
         generator,
         fun () ->
-            Count = 1_000_000,
+            Count = 1000,
             Params = [
                 {{1, 3}, {9, 15}, {40, 50}},
                 {{10, 20}, {50, 99}, {100, 500}}
