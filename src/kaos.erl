@@ -416,23 +416,23 @@ generate_one(#gen_set{gen_size = GenSize, gen_value = GenValue}) ->
     generate_one_set_until_size(SetTrait, GenValue, Size);
 generate_one(#gen_recurse{f = Fun}) ->
     StateKey = {kaos, gen_recurse},
-    Level = case get(StateKey) of
+    Depth = case get(StateKey) of
         undefined ->
-            put(StateKey, 1),
-            1;
+            put(StateKey, 0),
+            0;
         PreviousLevel ->
             NewLevel = PreviousLevel + 1,
             put(StateKey, NewLevel),
             NewLevel
     end,
     try
-        generate_one(Fun(Level))
+        generate_one(Fun(Depth))
     after
-        case Level of
-            1 ->
+        case Depth of
+            0 ->
                 erase(StateKey);
             _ ->
-                put(StateKey, Level - 1)
+                put(StateKey, Depth - 1)
         end
     end;
 generate_one(#gen_string{gen_size = GenSize, gen_char = GenChar}) ->
