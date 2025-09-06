@@ -1,5 +1,3 @@
-![Kaos](images/logo.png "Kaos")
-
 <img src="images/logo.png" alt="Kaos" width="416" height="224">
 
 Kaos
