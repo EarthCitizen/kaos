@@ -122,6 +122,36 @@ bitstring_test_() ->
 
 binary_bad_size_test_() -> ?_generic_bad_size_test_(kaos:binary(kaos:boolean(), kaos:const(1))).
 
+binary_test_() ->
+    {
+        generator,
+        fun () ->
+            lists:map(
+                fun ({Size, Byte}) ->
+                    {ok, [Binary]} = kaos:generate(kaos:binary(kaos:const(Size), kaos:const(Byte)), 909, 1),
+                    ExpectedBytes =
+                        case Size of
+                            0 -> [];
+                            _ -> [Byte]
+                        end,
+                    ActualBytes = lists:uniq(binary:bin_to_list(Binary)),
+                    [
+                        {
+                            format_string("Expected binary to have ~p bytes", [Size]),
+                            ?_assertEqual(Size, byte_size(Binary))
+                        },
+                        {
+                            format_string("Expected all bytes to be ~p or empty for size 0", [Byte]),
+                            ?_assertEqual(ExpectedBytes, ActualBytes)
+
+                        }
+                    ]
+                end,
+                [{0, 0}, {1, 12}, {3, 36}, {12, 48}, {97, 96}, {121, 144}, {12_003, 224}]
+            )
+        end
+    }.
+
 boolean_test_() ->
     Count = 1000,
     {ok, AllValues} = kaos:generate(kaos:boolean(), 303, Count),
@@ -136,6 +166,14 @@ boolean_test_() ->
             ?_assertEqual([false, true], UniqueValues)
         }
     ].
+
+byte_test_() ->
+    {ok, AllValues} = kaos:generate(kaos:byte(), 909, 1000, fun (V, Set) -> sets:add_element(V, Set) end, sets:new()),
+    Bools = sets:to_list(sets:map(fun (V) -> is_integer(V) andalso V >= 0 andalso V =< 255 end, AllValues)),
+    {
+        "All values are integers between 0 and 255",
+        ?_assertEqual([true], Bools)
+    }.
 
 choose_test_() ->
     Count = 1000,
