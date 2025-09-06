@@ -273,7 +273,7 @@ generate(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
         fun Loop () ->
             receive
                 {'EXIT', _, normal} -> Loop();
-                {'EXIT', _, Error} -> CleanUpMessages(), {error, Error};
+                {'EXIT', _, Error} -> CleanUpWorker(), {error, Error};
                 Error = {error, _, _} -> CleanUpWorker(), Error;
                 Result = {ok, _} -> CleanUpWorker(), Result
             after 30_000 ->
