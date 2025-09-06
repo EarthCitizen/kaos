@@ -17,6 +17,8 @@ Build
 Running Example Files
 ---------------------
 
+  [examples/rand_json.erl](examples/rand_json.erl)
+
     $ rebar3 as examples shell
     1> rand_json:json(12).
     [
@@ -41,6 +43,9 @@ Running Example Files
       false
     ]
     ok
+
+  [examples/rand_boxes.erl](examples/rand_boxes.erl)
+
     2> rand_boxes:boxes().
     ╕╒╜╔╖╒╛╙╗╛╖
     ╙╝╗╙╗╙╓╝╚╛╗
