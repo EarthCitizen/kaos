@@ -7,4 +7,6 @@ jobs:
     container:
       image: erlang:28
     steps:
+      - name: Check out code
+        uses: actions/checkout@v5
       - run: rebar3 test
