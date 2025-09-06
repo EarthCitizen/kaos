@@ -17,9 +17,10 @@ Build
 Running Example Files
 ---------------------
 
+    $ rebar3 as examples shell
+
   [examples/rand_json.erl](examples/rand_json.erl)
 
-    $ rebar3 as examples shell
     1> rand_json:json(12).
     [
       {
