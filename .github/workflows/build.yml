@@ -3,7 +3,7 @@ run-name: "Run by ${{ github.actor }}"
 on: [push]
 jobs:
   Test:
-    runs-on: unbuntu-latest
+    runs-on: ubuntu-latest
     container:
       image: erlang:28
     steps:
