@@ -9,7 +9,7 @@ boxes() ->
     % The characters to choose from.
     GenChars = kaos:choose([kaos:const(C) || C <- ["╒", "╓", "╔", "╕", "╖", "╗", "╘", "╙", "╚", "╛", "╜", "╝"]]),
     % The width of the square.
-    GenWidth = kaos:integer(1, 24),
+    GenWidth = kaos:integer(6, 60),
     % Take the value generated from the width
     % and transform it into a more complex
     % generator.
