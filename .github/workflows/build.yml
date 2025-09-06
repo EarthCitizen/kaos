@@ -10,3 +10,9 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v5
       - run: rebar3 test
+      - name: Upload EUnit coverage reports
+        if: always()
+        uses: actions/upload-artifacts@v4
+        with:
+          name: coverage
+          path: ./_build/test/cover/**/*.html
