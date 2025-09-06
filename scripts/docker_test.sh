@@ -9,4 +9,4 @@ docker run -ti --rm \
     -v "$PWD":/build \
     -w /build \
     erlang:28 \
-    rebar3 eunit -v
+    rebar3 test
