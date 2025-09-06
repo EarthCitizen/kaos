@@ -13,7 +13,7 @@ boxes() ->
     % Take the value generated from the width
     % and transform it into a more complex
     % generator.
-    GenLines = kaos:mod_flat_map(
+    GenLines = kaos:mod_flatmap(
         fun (Width) ->
             GenString = kaos:string(kaos:const(Width), GenChars),
             GenStrings = lists:duplicate(Width, GenString),

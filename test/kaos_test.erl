@@ -439,9 +439,9 @@ mod_filter_test_() ->
         ?_assertEqual([3, 6, 9, 12, 15, 18], Threes)
     ].
 
-mod_flat_map_test_() ->
+mod_flatmap_test_() ->
     SizeGen = kaos:const(3),
-    FlatMapGen = kaos:mod_flat_map(
+    FlatMapGen = kaos:mod_flatmap(
         fun (S) -> kaos:list(kaos:const(S), kaos:const("A")) end,
         SizeGen
     ),

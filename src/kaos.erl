@@ -22,7 +22,7 @@
     list/2,
     map/3,
     mod_filter/2,
-    mod_flat_map/2,
+    mod_flatmap/2,
     mod_map/2,
     orddict/3,
     ordset/2,
@@ -35,7 +35,7 @@
 
 -export_type([
     depth_function/0,
-    flat_map_function/0,
+    flatmap_function/0,
     gen/0,
     generate_response/0,
     iterate_function/0,
@@ -59,7 +59,7 @@
     add :: fun((term(), term()) -> term())
 }).
 
--type flat_map_function() :: fun((term()) -> gen()).
+-type flatmap_function() :: fun((term()) -> gen()).
 -type generate_response() :: {ok, list(term())} | {error, term()}.
 -type iterate_function() :: fun((pos_integer(), term()) -> gen()).
 -type depth_function() :: fun((pos_integer()) -> gen()).
@@ -89,7 +89,7 @@
 -record(gen_tuple, {gens :: list(gen())}).
 -record(gen_weighted, {max_bound :: pos_integer(), weighted_gens :: nonempty_list(weighted_gen())}).
 -record(mod_filter, {f :: predicate_function(), gen :: gen()}).
--record(mod_flat_map, {f :: flat_map_function(), gen :: gen()}).
+-record(mod_flatmap, {f :: flatmap_function(), gen :: gen()}).
 -record(mod_map, {f :: map_function(), gen :: gen()}).
 
 -opaque gen() ::
@@ -115,7 +115,7 @@
     | #gen_tuple{}
     | #gen_weighted{}
     | #mod_filter{}
-    | #mod_flat_map{}
+    | #mod_flatmap{}
     | #mod_map{}
     .
 
@@ -225,8 +225,8 @@ reduce(Fun, [L, R | T]) -> reduce(Fun, [Fun(L, R) | T]).
 -spec mod_filter(predicate_function(), gen()) -> gen().
 mod_filter(Fun, Gen) when is_function(Fun, 1) -> #mod_filter{f = Fun, gen = Gen}.
 
--spec mod_flat_map(flat_map_function(), gen()) -> gen().
-mod_flat_map(Fun, Gen) when is_function(Fun, 1) -> #mod_flat_map{f = Fun, gen = Gen}.
+-spec mod_flatmap(flatmap_function(), gen()) -> gen().
+mod_flatmap(Fun, Gen) when is_function(Fun, 1) -> #mod_flatmap{f = Fun, gen = Gen}.
 
 -spec mod_map(map_function(), gen()) -> gen().
 mod_map(Fun, Gen) when is_function(Fun, 1) -> #mod_map{f = Fun, gen = Gen}.
@@ -450,7 +450,7 @@ generate_one(#gen_weighted{max_bound = MaxBound, weighted_gens = WeightedGens}) 
     {value, {_, FoundGen}} =
         lists:search(fun({Bound, _}) -> Selector =< Bound end, WeightedGens),
     generate_one(FoundGen);
-generate_one(#mod_flat_map{f = Fun, gen = Gen}) ->
+generate_one(#mod_flatmap{f = Fun, gen = Gen}) ->
     GenFn = fun() -> Fun(generate_one(Gen)) end,
     generate_one(GenFn());
 generate_one(#mod_filter{f = Fun, gen = Gen}) ->
