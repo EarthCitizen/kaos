@@ -270,19 +270,14 @@ generate(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
             exit(WorkerPid, normal),
             CleanUpMessages()
         end,
-    WaitReceive =
-        fun Loop () ->
-            receive
-                {'EXIT', _, normal} -> Loop();
-                {'EXIT', _, Error} -> CleanUpWorker(), {error, Error};
-                Error = {error, _, _} -> CleanUpWorker(), Error;
-                Result = {ok, _} -> CleanUpWorker(), Result
-            after 30_000 ->
-                CleanUpWorker(),
-                {error, timeout}
-            end
-        end,
-    WaitReceive().
+    receive
+        {'EXIT', _, Error} -> CleanUpWorker(), {error, Error};
+        Error = {error, _, _} -> CleanUpWorker(), Error;
+        Result = {ok, _} -> CleanUpWorker(), Result
+    after 30_000 ->
+        CleanUpWorker(),
+        {error, timeout}
+    end.
 
 generate_worker(Gen, Seed, Count, To, Merge, Acc) when is_integer(Count), Count > 0 ->
     rand:seed(exsss, Seed),
