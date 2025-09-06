@@ -12,7 +12,7 @@ jobs:
       - run: rebar3 test
       - name: Upload EUnit coverage reports
         if: always()
-        uses: actions/upload-artifacts@v4
+        uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: ./_build/test/cover/**/*.html
