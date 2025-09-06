@@ -1,4 +1,6 @@
-kaos
+![Kaos](images/logo.png "Kaos")
+
+Kaos
 =====
 
 A combinator library for Erlang to genrate random values and data structures.
