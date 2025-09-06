@@ -59,10 +59,10 @@
     add :: fun((term(), term()) -> term())
 }).
 
+-type depth_function() :: fun((non_neg_integer()) -> gen()).
 -type flatmap_function() :: fun((term()) -> gen()).
 -type generate_response() :: {ok, list(term())} | {error, term()}.
 -type iterate_function() :: fun((pos_integer(), term()) -> gen()).
--type depth_function() :: fun((pos_integer()) -> gen()).
 -type map_function() :: fun((term()) -> term()).
 -type predicate_function() :: fun((term()) -> boolean()).
 -type weighted_gen() :: {pos_integer(), gen()}.
