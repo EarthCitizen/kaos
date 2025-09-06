@@ -231,7 +231,7 @@ mod_flat_map(Fun, Gen) when is_function(Fun, 1) -> #mod_flat_map{f = Fun, gen = 
 -spec mod_map(map_function(), gen()) -> gen().
 mod_map(Fun, Gen) when is_function(Fun, 1) -> #mod_map{f = Fun, gen = Gen}.
 
--spec generate(gen(), integer(), pos_integer()) -> generate_response().
+-spec generate(gen(), term(), pos_integer()) -> generate_response().
 generate(Gen, Seed, Count) when is_integer(Count), Count > 0 ->
     Result = generate(
         Gen,
@@ -245,6 +245,7 @@ generate(Gen, Seed, Count) when is_integer(Count), Count > 0 ->
         Error -> Error
     end.
 
+-spec generate(gen(), term(), pos_integer(), fun((term(), term()) -> term()), term()) -> gen().
 generate(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
     process_flag(trap_exit, true),
     Self = self(),
