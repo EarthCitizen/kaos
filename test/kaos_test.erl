@@ -430,8 +430,8 @@ weighted_test_() ->
 mod_filter_test_() ->
     Values = lists:seq(1, 20),
     Gens = lists:map(fun kaos:const/1, Values),
-    FiveGen = kaos:mod_filter(fun (X) -> (X rem 5) =:= 0 end, kaos:cycle(Gens)),
-    ThreeGen = kaos:mod_filter(fun (X) -> (X rem 3) =:= 0 end, kaos:cycle(Gens)),
+    FiveGen = kaos:filter(fun (X) -> (X rem 5) =:= 0 end, kaos:cycle(Gens)),
+    ThreeGen = kaos:filter(fun (X) -> (X rem 3) =:= 0 end, kaos:cycle(Gens)),
     {ok, Fives} = kaos:generate(FiveGen, 1212, 4),
     {ok, Threes} = kaos:generate(ThreeGen, 1212, 6),
     [
@@ -441,7 +441,7 @@ mod_filter_test_() ->
 
 mod_flatmap_test_() ->
     SizeGen = kaos:const(3),
-    FlatMapGen = kaos:mod_flatmap(
+    FlatMapGen = kaos:flatmap(
         fun (S) -> kaos:list_of(kaos:const(S), kaos:const("A")) end,
         SizeGen
     ),
@@ -453,7 +453,7 @@ mod_flatmap_test_() ->
 
 mod_map_test_() ->
     ValueGen = kaos:const(3),
-    MapGen = kaos:mod_map(
+    MapGen = kaos:map(
         fun (S) -> S * 10 end,
         ValueGen
     ),

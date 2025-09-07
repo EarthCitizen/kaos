@@ -21,9 +21,9 @@
     iterate/1,
     list_of/2,
     map_of/3,
-    mod_filter/2,
-    mod_flatmap/2,
-    mod_map/2,
+    filter/2,
+    flatmap/2,
+    map/2,
     orddict_of/3,
     ordset_of/2,
     recurse/1,
@@ -124,7 +124,7 @@ all(Gens = [_ | _]) -> #gen_all{gens = Gens}.
 
 -spec array_of(gen(), gen()) -> gen().
 array_of(GenSize, GenValue) ->
-    mod_map(fun array:from_list/1, list_of(GenSize, GenValue)).
+    map(fun array:from_list/1, list_of(GenSize, GenValue)).
 
 -spec ascii_char() -> gen().
 ascii_char() -> integer(33, 126).
@@ -222,14 +222,14 @@ gcd(A, B) when is_integer(A), A >= 0, is_integer(B), B >= 0 -> gcd(B, A rem B).
 reduce(_, [L]) -> L;
 reduce(Fun, [L, R | T]) -> reduce(Fun, [Fun(L, R) | T]).
 
--spec mod_filter(predicate_function(), gen()) -> gen().
-mod_filter(Fun, Gen) when is_function(Fun, 1) -> #mod_filter{f = Fun, gen = Gen}.
+-spec filter(predicate_function(), gen()) -> gen().
+filter(Fun, Gen) when is_function(Fun, 1) -> #mod_filter{f = Fun, gen = Gen}.
 
--spec mod_flatmap(flatmap_function(), gen()) -> gen().
-mod_flatmap(Fun, Gen) when is_function(Fun, 1) -> #mod_flatmap{f = Fun, gen = Gen}.
+-spec flatmap(flatmap_function(), gen()) -> gen().
+flatmap(Fun, Gen) when is_function(Fun, 1) -> #mod_flatmap{f = Fun, gen = Gen}.
 
--spec mod_map(map_function(), gen()) -> gen().
-mod_map(Fun, Gen) when is_function(Fun, 1) -> #mod_map{f = Fun, gen = Gen}.
+-spec map(map_function(), gen()) -> gen().
+map(Fun, Gen) when is_function(Fun, 1) -> #mod_map{f = Fun, gen = Gen}.
 
 -spec generate(gen(), term(), pos_integer()) -> generate_response().
 generate(Gen, Seed, Count) when is_integer(Count), Count > 0 ->

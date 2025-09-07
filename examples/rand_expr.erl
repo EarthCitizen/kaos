@@ -7,11 +7,11 @@
 format_string(Format, Args) -> lists:flatten(io_lib:format(Format, Args)).
 
 gen_expr(MaxDepth) ->
-    GenValue = kaos:mod_map(fun (I) -> format_string("~p", [I]) end, kaos:integer(-100, 100)),
+    GenValue = kaos:map(fun (I) -> format_string("~p", [I]) end, kaos:integer(-100, 100)),
     GenOpSymbol = kaos:choose([kaos:const(C) || C <- [$+, $-, $/, $*]]),
     GenExpression =
         fun (GenOperand, GenOperator) ->
-            kaos:mod_map(
+            kaos:map(
                 fun ([Operand1, Operator, Operand2]) ->
                     format_string("( ~s ~c ~s )", [Operand1, Operator, Operand2])
                 end,
