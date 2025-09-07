@@ -245,7 +245,7 @@ generate(Gen, Seed, Count) when is_integer(Count), Count > 0 ->
         Error -> Error
     end.
 
--spec generate(gen(), term(), pos_integer(), fun((term(), term()) -> term()), term()) -> gen().
+-spec generate(gen(), term(), pos_integer(), fun((term(), term()) -> term()), term()) -> generate_response().
 generate(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
     process_flag(trap_exit, true),
     Self = self(),
@@ -421,9 +421,9 @@ generate_one(#gen_recurse{f = Fun}) ->
             put(StateKey, 0),
             0;
         PreviousLevel ->
-            NewLevel = PreviousLevel + 1,
-            put(StateKey, NewLevel),
-            NewLevel
+            NewDepth = PreviousLevel + 1,
+            put(StateKey, NewDepth),
+            NewDepth
     end,
     try
         generate_one(Fun(Depth))

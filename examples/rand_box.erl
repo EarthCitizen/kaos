@@ -1,11 +1,11 @@
--module(rand_boxes).
+-module(rand_box).
 
 -export([
-    boxes/0
+    box/0
 ]).
 
 % Generate a square of box drawing characters.
-boxes() ->
+box() ->
     % The characters to choose from.
     GenChars = kaos:choose([kaos:const(C) || C <- ["╒", "╓", "╔", "╕", "╖", "╗", "╘", "╙", "╚", "╛", "╜", "╝"]]),
     % The width of the square.

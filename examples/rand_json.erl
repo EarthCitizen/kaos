@@ -22,10 +22,11 @@ gen_json(MaxDepth) when is_integer(MaxDepth), MaxDepth >= 0 ->
     CreateGenJson = fun Nest () ->
         % First depth will be zero.
         kaos:recurse(fun (Depth) ->
-            case Depth of
-                _ when Depth < MaxDepth ->
+            case Depth < MaxDepth of
+                true ->
                     % These weights are not scientific.
                     % Just trial and error to tame the curve a bit.
+                    % Speeds up performance on large structures.
                     PrimitiveWeight = trunc((Depth + 1) * 1.75),
                     NestedWeight = max(1, trunc((MaxDepth - Depth) * 0.45)),
                     kaos:weighted([
@@ -41,7 +42,7 @@ gen_json(MaxDepth) when is_integer(MaxDepth), MaxDepth >= 0 ->
                             ])
                         }
                     ]);
-                _ ->
+                false ->
                     GenPrimitive
             end
         end)

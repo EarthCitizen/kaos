@@ -47,9 +47,9 @@ Running Example Files
     ]
     ok
 
-  [examples/rand_boxes.erl](examples/rand_boxes.erl)
+  [examples/rand_box.erl](examples/rand_box.erl)
 
-    2> rand_boxes:boxes().
+    2> rand_box:box().
     ╕╒╜╔╖╒╛╙╗╛╖
     ╙╝╗╙╗╙╓╝╚╛╗
     ╙╒╜╕╛╓╔╕╗╙╝
@@ -62,3 +62,8 @@ Running Example Files
     ╝╓╛╖╝╚╙╕╝╛╝
     ╒╛╝╛╝╖╛╒╒╝╛
     ok
+
+  [examples/rand_expr.erl](examples/rand_expr.erl)
+
+    3> rand_expr:expr(3).
+    ( -39 - ( ( 29 + -52 ) - ( -90 + -65 ) ) )
