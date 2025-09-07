@@ -280,7 +280,7 @@ generate(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
     end.
 
 generate_worker(Gen, Seed, Count, To, Merge, Acc) when is_integer(Count), Count > 0 ->
-    rand:seed(exsss, Seed),
+    _ = rand:seed(exsss, Seed),
     RunLoop =
         fun Loop(RemainingCount, LoopAcc) ->
             case RemainingCount of
