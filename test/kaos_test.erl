@@ -46,7 +46,7 @@ all_test_() ->
         ?_assertEqual(GetXY(3, 2, All), 200)
     ].
 
-array_test_() ->
+array_of_test_() ->
     ElementsGen = kaos:cycle([
         kaos:const(100),
         kaos:const(200),
@@ -55,9 +55,9 @@ array_test_() ->
         kaos:const(500),
         kaos:const(600)
     ]),
-    ArrGen1 = kaos:array(kaos:const(1), ElementsGen),
-    ArrGen2 = kaos:array(kaos:const(3), ElementsGen),
-    ArrGen3 = kaos:array(kaos:const(6), ElementsGen),
+    ArrGen1 = kaos:array_of(kaos:const(1), ElementsGen),
+    ArrGen2 = kaos:array_of(kaos:const(3), ElementsGen),
+    ArrGen3 = kaos:array_of(kaos:const(6), ElementsGen),
     {ok, [Arr1]} = kaos:generate(ArrGen1, 1001, 1),
     {ok, [Arr2]} = kaos:generate(ArrGen2, 1002, 1),
     {ok, [Arr3]} = kaos:generate(ArrGen3, 1003, 1),
@@ -99,15 +99,15 @@ ascii_char_test_() ->
         ?_assertNotEqual(All, Other)
     ].
 
-bitstring_bad_size_test_() -> ?_generic_bad_size_test_(kaos:bitstring(kaos:boolean())).
+bitstring_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:bitstring_of(kaos:boolean())).
 
-bitstring_test_() ->
+bitstring_of_test_() ->
     {
         generator,
         fun () ->
             lists:map(
                 fun (Size) ->
-                    {ok, [Bitstring]} = kaos:generate(kaos:bitstring(kaos:const(Size)), 909, 1),
+                    {ok, [Bitstring]} = kaos:generate(kaos:bitstring_of(kaos:const(Size)), 909, 1),
                     [
                         {
                             format_string("Expected bitstring to have ~p bits", [Size]),
@@ -120,15 +120,15 @@ bitstring_test_() ->
         end
     }.
 
-binary_bad_size_test_() -> ?_generic_bad_size_test_(kaos:binary(kaos:boolean(), kaos:const(1))).
+binary_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:binary_of(kaos:boolean(), kaos:const(1))).
 
-binary_test_() ->
+binary_of_test_() ->
     {
         generator,
         fun () ->
             lists:map(
                 fun ({Size, Byte}) ->
-                    {ok, [Binary]} = kaos:generate(kaos:binary(kaos:const(Size), kaos:const(Byte)), 909, 1),
+                    {ok, [Binary]} = kaos:generate(kaos:binary_of(kaos:const(Size), kaos:const(Byte)), 909, 1),
                     ExpectedBytes =
                         case Size of
                             0 -> [];
@@ -208,22 +208,22 @@ cycle_test_() ->
         ?_assertError(function_clause, kaos:cycle([]))
     ].
 
-dict_bad_size_test_() -> ?_generic_bad_size_test_(kaos:dict(kaos:boolean(), kaos:const(2), kaos:const(1))).
+dict_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:dict_of(kaos:boolean(), kaos:const(2), kaos:const(1))).
 
-dict_test_() -> ?_generic_key_value_test_(
-    fun kaos:dict/3,
+dict_of_test_() -> ?_generic_key_value_test_(
+    fun kaos:dict_of/3,
     fun dict:size/1,
     fun dict:fetch_keys/1,
     fun (D) -> [Value || {_, Value} <:- dict:to_list(D)] end
 ).
 
-gb_set_bad_size_test_() -> ?_generic_bad_size_test_(kaos:gb_set(kaos:boolean(), kaos:const(1))).
+gb_set_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:gb_set_of(kaos:boolean(), kaos:const(1))).
 
-gb_set_test_() -> ?_generic_set_test_(fun kaos:gb_set/2, fun gb_sets:to_list/1).
+gb_set_of_test_() -> ?_generic_set_test_(fun kaos:gb_set_of/2, fun gb_sets:to_list/1).
 
-gb_tree_bad_size_test_() -> ?_generic_bad_size_test_(kaos:gb_tree(kaos:boolean(), kaos:const(2), kaos:const(1))).
+gb_tree_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:gb_tree_of(kaos:boolean(), kaos:const(2), kaos:const(1))).
 
-gb_tree_test_() -> ?_generic_key_value_test_(fun kaos:gb_tree/3, fun gb_trees:size/1, fun gb_trees:keys/1, fun gb_trees:values/1).
+gb_tree_of_test_() -> ?_generic_key_value_test_(fun kaos:gb_tree_of/3, fun gb_trees:size/1, fun gb_trees:keys/1, fun gb_trees:values/1).
 
 integer_test_() ->
     {
@@ -254,17 +254,17 @@ integer_test_() ->
         end
     }.
 
-list_bad_size_test_() ->
+list_of_bad_size_test_() ->
     ?_assertMatch(
         {error, {badarg, "Size generator must provide an integer"}, _},
         kaos:generate(
-            kaos:list(kaos:boolean(), kaos:const(1)),
+            kaos:list_of(kaos:boolean(), kaos:const(1)),
             909,
             1
         )
     ).
 
-list_test_() ->
+list_of_test_() ->
     {
         generator,
         fun () ->
@@ -277,7 +277,7 @@ list_test_() ->
                 fun ({{SizeMin, SizeMax}, {ValueMin, ValueMax}}) ->
                     SizeGen = kaos:integer(SizeMin, SizeMax),
                     ValueGen = kaos:integer(ValueMin, ValueMax),
-                    ListsGen = kaos:list(SizeGen, ValueGen),
+                    ListsGen = kaos:list_of(SizeGen, ValueGen),
 
                     {ok, Lists} = kaos:generate(ListsGen, 9, Count),
 
@@ -303,26 +303,26 @@ list_test_() ->
         end
     }.
 
-map_bad_size_test_() -> ?_generic_bad_size_test_(kaos:map(kaos:boolean(), kaos:const(2), kaos:const(1))).
+map_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:map_of(kaos:boolean(), kaos:const(2), kaos:const(1))).
 
-map_test_() -> ?_generic_key_value_test_(fun kaos:map/3, fun maps:size/1, fun maps:keys/1, fun maps:values/1).
+map_of_test_() -> ?_generic_key_value_test_(fun kaos:map_of/3, fun maps:size/1, fun maps:keys/1, fun maps:values/1).
 
-orddict_bad_size_test_() -> ?_generic_bad_size_test_(kaos:orddict(kaos:boolean(), kaos:const(2), kaos:const(1))).
+orddict_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:orddict_of(kaos:boolean(), kaos:const(2), kaos:const(1))).
 
-orddict_test_() -> ?_generic_key_value_test_(
-    fun kaos:orddict/3,
+orddict_of_test_() -> ?_generic_key_value_test_(
+    fun kaos:orddict_of/3,
     fun orddict:size/1,
     fun orddict:fetch_keys/1,
     fun (D) -> [Value || {_, Value} <:- orddict:to_list(D)] end
 ).
 
-ordset_bad_size_test_() -> ?_generic_bad_size_test_(kaos:ordset(kaos:boolean(), kaos:const(1))).
+ordset_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:ordset_of(kaos:boolean(), kaos:const(1))).
 
-ordset_test_() -> ?_generic_set_test_(fun kaos:ordset/2, fun ordsets:to_list/1).
+ordset_of_test_() -> ?_generic_set_test_(fun kaos:ordset_of/2, fun ordsets:to_list/1).
 
-set_bad_size_test_() -> ?_generic_bad_size_test_(kaos:set(kaos:boolean(), kaos:const(1))).
+set_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:set_of(kaos:boolean(), kaos:const(1))).
 
-set_test_() -> ?_generic_set_test_(fun kaos:set/2, fun sets:to_list/1).
+set_of_test_() -> ?_generic_set_test_(fun kaos:set_of/2, fun sets:to_list/1).
 
 % string_of_test_() ->
 %     {
@@ -336,7 +336,7 @@ set_test_() -> ?_generic_set_test_(fun kaos:set/2, fun sets:to_list/1).
 %         end
 %     }.
 
-tuple_test_() ->
+tuple_of_test_() ->
     {
         generator,
         fun () ->
@@ -349,7 +349,7 @@ tuple_test_() ->
                         _ -> lists:seq(1, Size)
                     end,
 
-                    TupleGen = kaos:tuple(lists:map(fun kaos:const/1, ExpectedValues)),
+                    TupleGen = kaos:tuple_of(lists:map(fun kaos:const/1, ExpectedValues)),
 
                     {ok, Tuples} = kaos:generate(TupleGen, 9, Count),
 
@@ -442,7 +442,7 @@ mod_filter_test_() ->
 mod_flatmap_test_() ->
     SizeGen = kaos:const(3),
     FlatMapGen = kaos:mod_flatmap(
-        fun (S) -> kaos:list(kaos:const(S), kaos:const("A")) end,
+        fun (S) -> kaos:list_of(kaos:const(S), kaos:const("A")) end,
         SizeGen
     ),
     {ok, Values} = kaos:generate(FlatMapGen, 999, 3),

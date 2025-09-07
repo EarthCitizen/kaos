@@ -15,7 +15,7 @@ box() ->
     % generator.
     GenLines = kaos:mod_flatmap(
         fun (Width) ->
-            GenString = kaos:string(kaos:const(Width), GenChars),
+            GenString = kaos:string_of(kaos:const(Width), GenChars),
             GenStrings = lists:duplicate(Width, GenString),
             GenAll = kaos:all(GenStrings),
             kaos:mod_map(

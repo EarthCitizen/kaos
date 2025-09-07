@@ -12,7 +12,7 @@ gen_json(MaxDepth) when is_integer(MaxDepth), MaxDepth >= 0 ->
     GenNestSize = kaos:integer(1, 4),
     GenFloat = kaos:float(-12.0, 12.0),
     GenInteger = kaos:integer(-12, 12),
-    GenString = kaos:string(kaos:integer(1, 12), kaos:integer($a, $z)),
+    GenString = kaos:string_of(kaos:integer(1, 12), kaos:integer($a, $z)),
     GenPrimitive = kaos:choose([
         kaos:boolean(),
         GenFloat,
@@ -37,8 +37,8 @@ gen_json(MaxDepth) when is_integer(MaxDepth), MaxDepth >= 0 ->
                         {
                             NestedWeight,
                             kaos:choose([
-                                kaos:list(GenNestSize, Nest()),
-                                kaos:map(GenNestSize, GenString, Nest())
+                                kaos:list_of(GenNestSize, Nest()),
+                                kaos:map_of(GenNestSize, GenString, Nest())
                             ])
                         }
                     ]);

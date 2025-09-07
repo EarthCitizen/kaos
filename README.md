@@ -8,7 +8,7 @@ A combinator library for Erlang to genrate random values and data structures.
 Getting Started
 ---------------
 
-    58> {ok, [S]} = kaos:generate(kaos:string(kaos:integer(4, 9), kaos:integer($a, $z)), 112, 1).
+    58> {ok, [S]} = kaos:generate(kaos:string_of(kaos:integer(4, 9), kaos:integer($a, $z)), 112, 1).
     {ok,[<<"ypwcby">>]}
 
 Build

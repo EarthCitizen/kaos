@@ -2,34 +2,34 @@
 
 -export([
     all/1,
-    array/2,
+    array_of/2,
     ascii_char/0,
-    binary/2,
-    bitstring/1,
+    binary_of/2,
+    bitstring_of/1,
     boolean/0,
     byte/0,
     choose/1,
     const/1,
     cycle/1,
-    dict/3,
+    dict_of/3,
     float/2,
-    gb_set/2,
-    gb_tree/3,
+    gb_set_of/2,
+    gb_tree_of/3,
     generate/3,
     generate/5,
     integer/2,
     iterate/1,
-    list/2,
-    map/3,
+    list_of/2,
+    map_of/3,
     mod_filter/2,
     mod_flatmap/2,
     mod_map/2,
-    orddict/3,
-    ordset/2,
+    orddict_of/3,
+    ordset_of/2,
     recurse/1,
-    set/2,
-    string/2,
-    tuple/1,
+    set_of/2,
+    string_of/2,
+    tuple_of/1,
     weighted/1
 ]).
 
@@ -122,18 +122,18 @@
 -spec all(nonempty_list(gen())) -> gen().
 all(Gens = [_ | _]) -> #gen_all{gens = Gens}.
 
--spec array(gen(), gen()) -> gen().
-array(GenSize, GenValue) ->
-    mod_map(fun array:from_list/1, list(GenSize, GenValue)).
+-spec array_of(gen(), gen()) -> gen().
+array_of(GenSize, GenValue) ->
+    mod_map(fun array:from_list/1, list_of(GenSize, GenValue)).
 
 -spec ascii_char() -> gen().
 ascii_char() -> integer(33, 126).
 
--spec binary(gen(), gen()) -> gen().
-binary(GenSize, GenByte) -> #gen_binary{gen_size = GenSize, gen_byte = GenByte}.
+-spec binary_of(gen(), gen()) -> gen().
+binary_of(GenSize, GenByte) -> #gen_binary{gen_size = GenSize, gen_byte = GenByte}.
 
--spec bitstring(gen()) -> gen().
-bitstring(GenSize) -> #gen_bitstring{gen_size = GenSize}.
+-spec bitstring_of(gen()) -> gen().
+bitstring_of(GenSize) -> #gen_bitstring{gen_size = GenSize}.
 
 -spec boolean() -> gen().
 boolean() -> choose([const(true), const(false)]).
@@ -150,19 +150,19 @@ const(A) -> #gen_const{value = A}.
 -spec cycle(nonempty_list(gen())) -> gen().
 cycle(Gens = [_, _ | _]) -> #gen_cycle{id = make_ref(), gens = Gens}.
 
--spec dict(gen(), gen(), gen()) -> gen().
-dict(GenSize, GenKey, GenValue) -> #gen_dict{gen_size = GenSize, gen_key = GenKey, gen_value = GenValue}.
+-spec dict_of(gen(), gen(), gen()) -> gen().
+dict_of(GenSize, GenKey, GenValue) -> #gen_dict{gen_size = GenSize, gen_key = GenKey, gen_value = GenValue}.
 
 -spec float(float(), float()) -> gen().
 float(MinBound, MaxBound)
     when is_float(MinBound), is_float(MaxBound), MinBound < MaxBound ->
     #gen_float{min_bound = MinBound, max_bound = MaxBound}.
 
--spec gb_set(gen(), gen()) -> gen().
-gb_set(GenSize, GenValue) -> #gen_gb_set{gen_size = GenSize, gen_value = GenValue}.
+-spec gb_set_of(gen(), gen()) -> gen().
+gb_set_of(GenSize, GenValue) -> #gen_gb_set{gen_size = GenSize, gen_value = GenValue}.
 
--spec gb_tree(gen(), gen(), gen()) -> gen().
-gb_tree(GenSize, GenKey, GenValue) -> #gen_gb_tree{gen_size = GenSize, gen_key = GenKey, gen_value = GenValue}.
+-spec gb_tree_of(gen(), gen(), gen()) -> gen().
+gb_tree_of(GenSize, GenKey, GenValue) -> #gen_gb_tree{gen_size = GenSize, gen_key = GenKey, gen_value = GenValue}.
 
 -spec integer(integer(), integer()) -> gen().
 integer(MinBound, MaxBound)
@@ -172,29 +172,29 @@ integer(MinBound, MaxBound)
 -spec iterate(iterate_function()) -> gen().
 iterate(Fun) when is_function(Fun, 2) -> #gen_iterate{id = make_ref(), f = Fun}.
 
--spec list(gen(), gen()) -> gen().
-list(GenSize, GenValue) -> #gen_list{gen_size = GenSize, gen_value = GenValue}.
+-spec list_of(gen(), gen()) -> gen().
+list_of(GenSize, GenValue) -> #gen_list{gen_size = GenSize, gen_value = GenValue}.
 
--spec map(gen(), gen(), gen()) -> gen().
-map(GenSize, GenKey, GenValue) -> #gen_map{gen_size = GenSize, gen_key = GenKey, gen_value = GenValue}.
+-spec map_of(gen(), gen(), gen()) -> gen().
+map_of(GenSize, GenKey, GenValue) -> #gen_map{gen_size = GenSize, gen_key = GenKey, gen_value = GenValue}.
 
--spec orddict(gen(), gen(), gen()) -> gen().
-orddict(GenSize, GenKey, GenValue) -> #gen_orddict{gen_size = GenSize, gen_key = GenKey, gen_value = GenValue}.
+-spec orddict_of(gen(), gen(), gen()) -> gen().
+orddict_of(GenSize, GenKey, GenValue) -> #gen_orddict{gen_size = GenSize, gen_key = GenKey, gen_value = GenValue}.
 
--spec ordset(gen(), gen()) -> gen().
-ordset(GenSize, GenValue) -> #gen_ordset{gen_size = GenSize, gen_value = GenValue}.
+-spec ordset_of(gen(), gen()) -> gen().
+ordset_of(GenSize, GenValue) -> #gen_ordset{gen_size = GenSize, gen_value = GenValue}.
 
 -spec recurse(depth_function()) -> gen().
 recurse(Fun) when is_function(Fun, 1) -> #gen_recurse{f = Fun}.
 
--spec set(gen(), gen()) -> gen().
-set(GenSize, GenValue) -> #gen_set{gen_size = GenSize, gen_value = GenValue}.
+-spec set_of(gen(), gen()) -> gen().
+set_of(GenSize, GenValue) -> #gen_set{gen_size = GenSize, gen_value = GenValue}.
 
--spec string(gen(), gen()) -> gen().
-string(GenSize, GenChar) -> #gen_string{gen_size = GenSize, gen_char = GenChar}.
+-spec string_of(gen(), gen()) -> gen().
+string_of(GenSize, GenChar) -> #gen_string{gen_size = GenSize, gen_char = GenChar}.
 
--spec tuple(list(gen())) -> gen().
-tuple(Gens) when is_list(Gens) -> #gen_tuple{gens = Gens}.
+-spec tuple_of(list(gen())) -> gen().
+tuple_of(Gens) when is_list(Gens) -> #gen_tuple{gens = Gens}.
 
 -spec weighted(nonempty_list(weighted_gen())) -> gen().
 weighted(WeightedGens = [_ | _]) ->
@@ -436,7 +436,7 @@ generate_one(#gen_recurse{f = Fun}) ->
         end
     end;
 generate_one(#gen_string{gen_size = GenSize, gen_char = GenChar}) ->
-    unicode:characters_to_binary(generate_one(list(GenSize, GenChar)));
+    unicode:characters_to_binary(generate_one(list_of(GenSize, GenChar)));
 generate_one(#gen_tuple{gens = Gens}) ->
     case length(Gens) of
         0 ->
