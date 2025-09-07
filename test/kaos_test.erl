@@ -13,25 +13,6 @@ unique(List) ->
 unique_nested(Fn, List) ->
     lists:sort(lists:uniq(lists:flatten(lists:map(Fn, List)))).
 
-generate_different_seed_test_() ->
-    {ok, Values1} = kaos:generate(kaos:integer(1, 500), 909, 500),
-    {ok, Values2} = kaos:generate(kaos:integer(1, 500), 450, 500),
-    [
-        {
-            "Different seeds generate different values",
-            ?_assertNotEqual(Values1, Values2)
-        }
-    ].
-
-generate_same_seed_test_() ->
-    {ok, Values1} = kaos:generate(kaos:integer(1, 500), 909, 500),
-    {ok, Values2} = kaos:generate(kaos:integer(1, 500), 909, 500),
-    [
-        {
-            "Same seeds generate same values",
-            ?_assertEqual(Values1, Values2)
-        }
-    ].
 
 all_test_() ->
     AllOfGen = kaos:all([kaos:const(100), kaos:const(200)]),
@@ -99,27 +80,6 @@ ascii_char_test_() ->
         ?_assertNotEqual(All, Other)
     ].
 
-bitstring_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:bitstring_of(kaos:boolean())).
-
-bitstring_of_test_() ->
-    {
-        generator,
-        fun () ->
-            lists:map(
-                fun (Size) ->
-                    {ok, [Bitstring]} = kaos:generate(kaos:bitstring_of(kaos:const(Size)), 909, 1),
-                    [
-                        {
-                            format_string("Expected bitstring to have ~p bits", [Size]),
-                            ?_assertEqual(Size, bit_size(Bitstring))
-                        }
-                    ]
-                end,
-                [0, 1, 3, 12, 97, 121, 12_003]
-            )
-        end
-    }.
-
 binary_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:binary_of(kaos:boolean(), kaos:const(1))).
 
 binary_of_test_() ->
@@ -148,6 +108,27 @@ binary_of_test_() ->
                     ]
                 end,
                 [{0, 0}, {1, 12}, {3, 36}, {12, 48}, {97, 96}, {121, 144}, {12_003, 224}]
+            )
+        end
+    }.
+
+bitstring_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:bitstring_of(kaos:boolean())).
+
+bitstring_of_test_() ->
+    {
+        generator,
+        fun () ->
+            lists:map(
+                fun (Size) ->
+                    {ok, [Bitstring]} = kaos:generate(kaos:bitstring_of(kaos:const(Size)), 909, 1),
+                    [
+                        {
+                            format_string("Expected bitstring to have ~p bits", [Size]),
+                            ?_assertEqual(Size, bit_size(Bitstring))
+                        }
+                    ]
+                end,
+                [0, 1, 3, 12, 97, 121, 12_003]
             )
         end
     }.
@@ -216,6 +197,29 @@ dict_of_test_() -> ?_generic_key_value_test_(
     fun dict:fetch_keys/1,
     fun (D) -> [Value || {_, Value} <:- dict:to_list(D)] end
 ).
+
+filter_test_() ->
+    Values = lists:seq(1, 20),
+    Gens = lists:map(fun kaos:const/1, Values),
+    FiveGen = kaos:filter(fun (X) -> (X rem 5) =:= 0 end, kaos:cycle(Gens)),
+    ThreeGen = kaos:filter(fun (X) -> (X rem 3) =:= 0 end, kaos:cycle(Gens)),
+    {ok, Fives} = kaos:generate(FiveGen, 1212, 4),
+    {ok, Threes} = kaos:generate(ThreeGen, 1212, 6),
+    [
+        ?_assertEqual([5, 10, 15, 20], Fives),
+        ?_assertEqual([3, 6, 9, 12, 15, 18], Threes)
+    ].
+
+flatmap_test_() ->
+    SizeGen = kaos:const(3),
+    FlatMapGen = kaos:flatmap(
+        fun (S) -> kaos:list_of(kaos:const(S), kaos:const("A")) end,
+        SizeGen
+    ),
+    {ok, Values} = kaos:generate(FlatMapGen, 999, 3),
+    [
+        ?_assertEqual([["A", "A", "A"], ["A", "A", "A"], ["A", "A", "A"]], Values)
+    ].
 
 gb_set_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:gb_set_of(kaos:boolean(), kaos:const(1))).
 
@@ -302,6 +306,20 @@ list_of_test_() ->
             )
         end
     }.
+
+map_test_() ->
+    ValueGen = kaos:const(3),
+    MapGen = kaos:map(
+        fun (S) -> S * 10 end,
+        ValueGen
+    ),
+    {ok, Values} = kaos:generate(MapGen, 999, 3),
+    [
+        {
+            format_string("Mapped all generated values to 30", []),
+            ?_assertEqual([30, 30, 30], Values)
+        }
+    ].
 
 map_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:map_of(kaos:boolean(), kaos:const(2), kaos:const(1))).
 
@@ -427,40 +445,22 @@ weighted_test_() ->
         end
     }.
 
-mod_filter_test_() ->
-    Values = lists:seq(1, 20),
-    Gens = lists:map(fun kaos:const/1, Values),
-    FiveGen = kaos:filter(fun (X) -> (X rem 5) =:= 0 end, kaos:cycle(Gens)),
-    ThreeGen = kaos:filter(fun (X) -> (X rem 3) =:= 0 end, kaos:cycle(Gens)),
-    {ok, Fives} = kaos:generate(FiveGen, 1212, 4),
-    {ok, Threes} = kaos:generate(ThreeGen, 1212, 6),
-    [
-        ?_assertEqual([5, 10, 15, 20], Fives),
-        ?_assertEqual([3, 6, 9, 12, 15, 18], Threes)
-    ].
-
-mod_flatmap_test_() ->
-    SizeGen = kaos:const(3),
-    FlatMapGen = kaos:flatmap(
-        fun (S) -> kaos:list_of(kaos:const(S), kaos:const("A")) end,
-        SizeGen
-    ),
-    {ok, Values} = kaos:generate(FlatMapGen, 999, 3),
-    [
-        ?_assertEqual([["A", "A", "A"], ["A", "A", "A"], ["A", "A", "A"]], Values)
-    ].
-
-
-mod_map_test_() ->
-    ValueGen = kaos:const(3),
-    MapGen = kaos:map(
-        fun (S) -> S * 10 end,
-        ValueGen
-    ),
-    {ok, Values} = kaos:generate(MapGen, 999, 3),
+generate_different_seed_test_() ->
+    {ok, Values1} = kaos:generate(kaos:integer(1, 500), 909, 500),
+    {ok, Values2} = kaos:generate(kaos:integer(1, 500), 450, 500),
     [
         {
-            format_string("Mapped all generated values to 30", []),
-            ?_assertEqual([30, 30, 30], Values)
+            "Different seeds generate different values",
+            ?_assertNotEqual(Values1, Values2)
+        }
+    ].
+
+generate_same_seed_test_() ->
+    {ok, Values1} = kaos:generate(kaos:integer(1, 500), 909, 500),
+    {ok, Values2} = kaos:generate(kaos:integer(1, 500), 909, 500),
+    [
+        {
+            "Same seeds generate same values",
+            ?_assertEqual(Values1, Values2)
         }
     ].

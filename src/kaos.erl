@@ -12,25 +12,25 @@
     const/1,
     cycle/1,
     dict_of/3,
+    filter/2,
+    flatmap/2,
     float/2,
     gb_set_of/2,
     gb_tree_of/3,
-    generate/3,
-    generate/5,
     integer/2,
     iterate/1,
     list_of/2,
-    map_of/3,
-    filter/2,
-    flatmap/2,
     map/2,
+    map_of/3,
     orddict_of/3,
     ordset_of/2,
     recurse/1,
     set_of/2,
     string_of/2,
     tuple_of/1,
-    weighted/1
+    weighted/1,
+    generate/3,
+    generate/5
 ]).
 
 -export_type([
@@ -153,6 +153,12 @@ cycle(Gens = [_, _ | _]) -> #gen_cycle{id = make_ref(), gens = Gens}.
 -spec dict_of(gen(), gen(), gen()) -> gen().
 dict_of(GenSize, GenKey, GenValue) -> #gen_dict{gen_size = GenSize, gen_key = GenKey, gen_value = GenValue}.
 
+-spec filter(predicate_function(), gen()) -> gen().
+filter(Fun, Gen) when is_function(Fun, 1) -> #mod_filter{f = Fun, gen = Gen}.
+
+-spec flatmap(flatmap_function(), gen()) -> gen().
+flatmap(Fun, Gen) when is_function(Fun, 1) -> #mod_flatmap{f = Fun, gen = Gen}.
+
 -spec float(float(), float()) -> gen().
 float(MinBound, MaxBound)
     when is_float(MinBound), is_float(MaxBound), MinBound < MaxBound ->
@@ -214,19 +220,6 @@ weighted(WeightedGens = [_ | _]) ->
     MaxBound = lists:max(Bounds),
     BoundedGens = lists:zipwith(fun(B, {_, G}) -> {B, G} end, Bounds, WeightedGens),
     #gen_weighted{max_bound = MaxBound, weighted_gens = BoundedGens}.
-
-gcd(A, B) when is_integer(A), is_integer(B), A < B -> gcd(B, A);
-gcd(A, 0) when is_integer(A), A >= 0 -> A;
-gcd(A, B) when is_integer(A), A >= 0, is_integer(B), B >= 0 -> gcd(B, A rem B).
-
-reduce(_, [L]) -> L;
-reduce(Fun, [L, R | T]) -> reduce(Fun, [Fun(L, R) | T]).
-
--spec filter(predicate_function(), gen()) -> gen().
-filter(Fun, Gen) when is_function(Fun, 1) -> #mod_filter{f = Fun, gen = Gen}.
-
--spec flatmap(flatmap_function(), gen()) -> gen().
-flatmap(Fun, Gen) when is_function(Fun, 1) -> #mod_flatmap{f = Fun, gen = Gen}.
 
 -spec map(map_function(), gen()) -> gen().
 map(Fun, Gen) when is_function(Fun, 1) -> #mod_map{f = Fun, gen = Gen}.
@@ -296,6 +289,13 @@ generate_worker(Gen, Seed, Count, To, Merge, Acc) when is_integer(Count), Count 
         _:Error:Stacktrace ->
             To ! {error, Error, Stacktrace}
     end.
+
+gcd(A, B) when is_integer(A), is_integer(B), A < B -> gcd(B, A);
+gcd(A, 0) when is_integer(A), A >= 0 -> A;
+gcd(A, B) when is_integer(A), A >= 0, is_integer(B), B >= 0 -> gcd(B, A rem B).
+
+reduce(_, [L]) -> L;
+reduce(Fun, [L, R | T]) -> reduce(Fun, [Fun(L, R) | T]).
 
 generate_one(#gen_all{gens = Gens}) ->
     lists:map(fun generate_one/1, Gens);
