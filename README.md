@@ -21,6 +21,7 @@ A combinator library for Erlang to genrate random values and data structures.
 
   [examples/rand_json.erl](examples/rand_json.erl)
 
+  ```erlang
     1> rand_json:json(12).
     [
       {
@@ -44,11 +45,13 @@ A combinator library for Erlang to genrate random values and data structures.
       false
     ]
     ok
+  ```
 
 ### Generate Random ASCII Graphics
 
   [examples/rand_box.erl](examples/rand_box.erl)
 
+  ```erlang
     2> rand_box:box().
     ╕╒╜╔╖╒╛╙╗╛╖
     ╙╝╗╙╗╙╓╝╚╛╗
@@ -62,17 +65,29 @@ A combinator library for Erlang to genrate random values and data structures.
     ╝╓╛╖╝╚╙╕╝╛╝
     ╒╛╝╛╝╖╛╒╒╝╛
     ok
+  ```
 
 ### Generate Random Math Expression
 
   [examples/rand_expr.erl](examples/rand_expr.erl)
 
+  ```erlang
     3> rand_expr:expr(3).
     ( -39 - ( ( 29 + -52 ) - ( -90 + -65 ) ) )
+  ```
 
 ### Generate Random Password
 
   [examples/rand_pass.erl](examples/rand_pass.erl)
 
+  Generates a random password of 6 or more characters in length
+  based on the parameter, and must satisfy:
+  - 2 special characters
+  - 1 uppercase letter
+  - 1 lowercase letter
+  - 1 number
+
+  ```erlang
     4> rand_pass:pass(18).
     "6+LP!J}vaj1sg(+K:("
+  ```

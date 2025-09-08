@@ -42,9 +42,11 @@ gen_pass(RequiredLength) ->
             kaos:list_of(kaos:const(RequiredLength - 5), GenFiller)
         ]),
     kaos:flatmap(
+        % Use arrays and a set to track previously
+        % picked indexes for massive performance boost
+        % on large values.
         fun (AllCharsGrouped) ->
-            AllChars = lists:flatten(AllCharsGrouped),
-            AllCharsArray = array:from_list(AllChars),
+            AllCharsArray = array:from_list(lists:flatten(AllCharsGrouped)),
             Shuffled = array:new([{size, array:size(AllCharsArray)}, {fixed, true}]),
             GenRecur =
                 fun Recur (Choices, Picked, Destination, DestIndex) ->
