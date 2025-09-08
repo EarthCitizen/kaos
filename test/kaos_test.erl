@@ -342,6 +342,23 @@ set_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:set_of(kaos:boolean(), 
 
 set_of_test_() -> ?_generic_set_test_(fun kaos:set_of/2, fun sets:to_list/1).
 
+shuffle_test_() ->
+    {
+        generator,
+        fun () ->
+            lists:map(
+                fun ({Input, Expected}) ->
+                    {ok, Actual} = kaos:generate(kaos:shuffle(Input), 909, 3),
+                    ?'_assertEqual'(Expected, Actual)
+                end,
+                [
+                    {[1, 2, 3], [[3,1,2],[3,2,1],[2,1,3]]},
+                    {"abcdefg", ["fgbdaec","bcgadfe","cbdfeag"]}
+                ]
+            )
+        end
+    }.
+
 % string_of_test_() ->
 %     {
 %         generate,
