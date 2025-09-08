@@ -62,7 +62,11 @@
 -type nonunary_list() :: [gen() | nonempty_list(gen())].
 -type depth_function() :: fun((non_neg_integer()) -> gen()).
 -type flatmap_function() :: fun((term()) -> gen()).
--type generate_response() :: {ok, list(term())} | {error, term()}.
+-type generate_response() :: {ok, list(term())}
+    | {error, {badarg, string()}, erlang:stacktrace()}
+    | {error, timeout}
+    | {error, term(), erlang:stacktrace()}
+    | {error, term()}.
 -type iterate_function() :: fun((pos_integer(), term()) -> gen()).
 -type map_function() :: fun((term()) -> term()).
 -type predicate_function() :: fun((term()) -> boolean()).
@@ -287,8 +291,8 @@ generate_worker(Gen, Seed, Count, To, Merge, Acc) when is_integer(Count), Count 
     try
         To ! {ok, RunLoop(Count, Acc)}
     catch
-        _:Error:Stacktrace ->
-            To ! {error, Error, Stacktrace}
+        _:Reason:Stacktrace ->
+            To ! {error, Reason, Stacktrace}
     end.
 
 gcd(A, B) when is_integer(A), is_integer(B), A < B -> gcd(B, A);
