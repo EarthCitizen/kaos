@@ -59,6 +59,7 @@
     add :: fun((term(), term()) -> term())
 }).
 
+-type nonunary_list() :: [gen() | nonempty_list(gen())].
 -type depth_function() :: fun((non_neg_integer()) -> gen()).
 -type flatmap_function() :: fun((term()) -> gen()).
 -type generate_response() :: {ok, list(term())} | {error, term()}.
@@ -119,8 +120,8 @@
     | #mod_map{}
     .
 
--spec all(nonempty_list(gen())) -> gen().
-all(Gens = [_ | _]) -> #gen_all{gens = Gens}.
+-spec all(nonunary_list()) -> gen().
+all(Gens = [_, _ | _]) -> #gen_all{gens = Gens}.
 
 -spec array_of(gen(), gen()) -> gen().
 array_of(GenSize, GenValue) ->
@@ -141,13 +142,13 @@ boolean() -> choose([const(true), const(false)]).
 -spec byte() -> gen().
 byte() -> integer(0, 255).
 
--spec choose(nonempty_list(gen())) -> gen().
-choose(Gens) when length(Gens) > 1 -> #gen_choose{gens = Gens}.
+-spec choose(nonunary_list()) -> gen().
+choose(Gens = [_, _ | _]) when length(Gens) > 1 -> #gen_choose{gens = Gens}.
 
 -spec const(term()) -> gen().
 const(A) -> #gen_const{value = A}.
 
--spec cycle(nonempty_list(gen())) -> gen().
+-spec cycle(nonunary_list()) -> gen().
 cycle(Gens = [_, _ | _]) -> #gen_cycle{id = make_ref(), gens = Gens}.
 
 -spec dict_of(gen(), gen(), gen()) -> gen().
@@ -202,8 +203,8 @@ string_of(GenSize, GenChar) -> #gen_string{gen_size = GenSize, gen_char = GenCha
 -spec tuple_of(list(gen())) -> gen().
 tuple_of(Gens) when is_list(Gens) -> #gen_tuple{gens = Gens}.
 
--spec weighted(nonempty_list(weighted_gen())) -> gen().
-weighted(WeightedGens = [_ | _]) ->
+-spec weighted(nonunary_list()) -> gen().
+weighted(WeightedGens = [_, _ | _]) ->
     Weights = lists:map(fun({W, _}) when is_integer(W), W > 0 -> W end, WeightedGens),
     GCD = reduce(fun gcd/2, Weights),
     Increments = lists:map(fun(W) when is_integer(W) -> trunc(W / GCD) end, Weights),
@@ -311,7 +312,7 @@ generate_one(#gen_bitstring{gen_size = GenSize}) ->
         0 -> <<>>;
         _ ->
             ZeroOrOne = choose([const(0), const(1)]),
-            Bits = generate_one(all(lists:duplicate(Size, ZeroOrOne))),
+            Bits = [generate_one(Bit) || Bit <- lists:duplicate(Size, ZeroOrOne)],
             << <<B:1>> || B <- Bits >>
     end;
 generate_one(#gen_choose{gens = Gens}) ->

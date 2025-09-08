@@ -15,8 +15,8 @@ unique_nested(Fn, List) ->
 
 
 all_test_() ->
-    AllOfGen = kaos:all([kaos:const(100), kaos:const(200)]),
-    {ok, All} = kaos:generate(AllOfGen, 1000, 3),
+    AllGen = kaos:all([kaos:const(100), kaos:const(200)]),
+    {ok, All} = kaos:generate(AllGen, 1000, 3),
     GetXY = fun (X, Y, List) -> lists:nth(Y, lists:nth(X, List)) end,
     [
         ?_assertEqual(GetXY(1, 1, All), 100),
