@@ -46,36 +46,28 @@ gen_pass(RequiredLength) ->
         % picked indexes for massive performance boost
         % on large values.
         fun (AllCharsGrouped) ->
-            AllCharsArray = array:from_list(lists:flatten(AllCharsGrouped)),
-            Shuffled = array:new([{size, array:size(AllCharsArray)}, {fixed, true}]),
-            GenRecur =
-                fun Recur (Choices, Picked, Destination, DestIndex) ->
-                    case array:size(Choices) == sets:size(Picked) of
-                        true ->
-                            kaos:const(array:to_list(Destination));
-                        false ->
-                            kaos:flatmap(
-                                fun (ChoicesIndex) ->
-                                    Char = array:get(ChoicesIndex, Choices),
-                                    NewDestination = array:set(DestIndex, Char, Destination),
-                                    Recur(
-                                        Choices,
-                                        sets:add_element(ChoicesIndex, Picked),
-                                        NewDestination,
-                                        DestIndex + 1
-                                    )
-                                end,
-                                kaos:filter(
-                                    fun (E) -> not sets:is_element(E, Picked) end,
-                                    case array:size(Choices) of
-                                        1 -> kaos:const(0);
-                                        _ -> kaos:integer(0, array:size(Choices) - 1)
-                                    end
-                                )
-                            )
-                    end
+            AllChars = lists:flatten(AllCharsGrouped),
+            AllCharsArray = array:from_list(AllChars),
+            N = array:size(AllCharsArray),
+            N_2 = N - 2,
+            N_1 = N - 1,
+            GenShuffle =
+                fun
+                    Recur (Choices, I) when I > N_2 ->
+                        kaos:const(array:to_list(Choices));
+                    Recur (Choices, I) ->
+                        kaos:flatmap(
+                            fun (J) ->
+                                IE = array:get(I, Choices),
+                                JE = array:get(J, Choices),
+                                Set1 = array:set(I, JE, Choices),
+                                Set2 = array:set(J, IE, Set1),
+                                Recur(Set2, I + 1)
+                            end,
+                            kaos:integer(I, N_1)
+                        )
                 end,
-            GenRecur(AllCharsArray, sets:new(), Shuffled, 0)
+            GenShuffle(AllCharsArray, 0)
         end,
         GenAllChars
     ).
