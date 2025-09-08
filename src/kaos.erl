@@ -26,6 +26,7 @@
     ordset_of/2,
     recurse/1,
     set_of/2,
+    shuffle/1,
     string_of/2,
     tuple_of/1,
     weighted/1,
@@ -90,6 +91,7 @@
 -record(gen_ordset, {gen_size :: gen(), gen_value :: gen()}).
 -record(gen_recurse, {f :: depth_function()}).
 -record(gen_set, {gen_size :: gen(), gen_value :: gen()}).
+-record(gen_shuffle, {list :: list()}).
 -record(gen_string, {gen_size :: gen(), gen_char :: gen()}).
 -record(gen_tuple, {gens :: list(gen())}).
 -record(gen_weighted, {max_bound :: pos_integer(), weighted_gens :: nonempty_list(weighted_gen())}).
@@ -116,6 +118,7 @@
     | #gen_ordset{}
     | #gen_recurse{}
     | #gen_set{}
+    | #gen_shuffle{}
     | #gen_string{}
     | #gen_tuple{}
     | #gen_weighted{}
@@ -200,6 +203,9 @@ recurse(Fun) when is_function(Fun, 1) -> #gen_recurse{f = Fun}.
 
 -spec set_of(gen(), gen()) -> gen().
 set_of(GenSize, GenValue) -> #gen_set{gen_size = GenSize, gen_value = GenValue}.
+
+-spec shuffle(list()) -> gen().
+shuffle(Elements) when is_list(Elements) -> #gen_shuffle{list = Elements}.
 
 -spec string_of(gen(), gen()) -> gen().
 string_of(GenSize, GenChar) -> #gen_string{gen_size = GenSize, gen_char = GenChar}.
@@ -419,6 +425,30 @@ generate_one(#gen_set{gen_size = GenSize, gen_value = GenValue}) ->
                    is_member = fun sets:is_element/2,
                    add = fun sets:add_element/2},
     generate_one_set_until_size(SetTrait, GenValue, Size);
+generate_one(#gen_shuffle{list = Elements}) ->
+    % Implementation of Fisher-Yates shuffle algorithm.
+    % See: https://en.wikipedia.org/wiki/Fisher–Yates_shuffle
+    case Elements of
+        [] -> [];
+        [E] -> [E];
+        _ ->
+            ElemArray = array:from_list(Elements),
+            N = array:size(ElemArray),
+            N_2 = N - 2,
+            N_1 = N - 1,
+            Shuffle = fun
+                Recur (Array, I) when I > N_2 ->
+                    array:to_list(Array);
+                Recur (Array, I) ->
+                    J = generate_one(integer(I, N_1)),
+                    IE = array:get(I, Array),
+                    JE = array:get(J, Array),
+                    ISwapped = array:set(I, JE, Array),
+                    JSwapped = array:set(J, IE, ISwapped),
+                    Recur(JSwapped, I + 1)
+            end,
+            Shuffle(ElemArray, 0)
+    end;
 generate_one(#gen_recurse{f = Fun}) ->
     StateKey = {kaos, gen_recurse},
     Depth = case get(StateKey) of

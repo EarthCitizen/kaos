@@ -42,36 +42,13 @@ gen_pass(RequiredLength) ->
             kaos:list_of(kaos:const(RequiredLength - 5), GenFiller)
         ]),
     kaos:flatmap(
-        % Use arrays and a set to track previously
-        % picked indexes for massive performance boost
-        % on large values.
         fun (AllCharsGrouped) ->
             AllChars = lists:flatten(AllCharsGrouped),
-            AllCharsArray = array:from_list(AllChars),
-            N = array:size(AllCharsArray),
-            N_2 = N - 2,
-            N_1 = N - 1,
-            GenShuffle =
-                fun
-                    Recur (Choices, I) when I > N_2 ->
-                        kaos:const(array:to_list(Choices));
-                    Recur (Choices, I) ->
-                        kaos:flatmap(
-                            fun (J) ->
-                                IE = array:get(I, Choices),
-                                JE = array:get(J, Choices),
-                                Set1 = array:set(I, JE, Choices),
-                                Set2 = array:set(J, IE, Set1),
-                                Recur(Set2, I + 1)
-                            end,
-                            kaos:integer(I, N_1)
-                        )
-                end,
-            GenShuffle(AllCharsArray, 0)
+            kaos:shuffle(AllChars)
         end,
         GenAllChars
     ).
 
 pass(RequiredLength) when is_integer(RequiredLength), RequiredLength >= 6 ->
-    {ok, [Passes]} = kaos:generate(gen_pass(RequiredLength), os:system_time(nanosecond), 1),
-    io:format("~p~n", [Passes]).
+    {ok, Passes} = kaos:generate(gen_pass(RequiredLength), os:system_time(nanosecond), 12),
+    io:format("~p~n", Passes).
