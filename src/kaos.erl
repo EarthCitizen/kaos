@@ -5,7 +5,8 @@
     array_of/2,
     ascii_char/0,
     binary_of/2,
-    bitstring_of/1,
+    bit/0,
+    bitstring_of/2,
     boolean/0,
     byte/0,
     choose/1,
@@ -38,7 +39,10 @@
     depth_function/0,
     flatmap_function/0,
     gen/0,
+    generate_error_response/0,
     generate_response/0,
+    generate_into_function/1,
+    generate_into_response/1,
     iterate_function/0,
     map_function/0,
     predicate_function/0,
@@ -63,11 +67,13 @@
 -type nonunary_list() :: [gen() | nonempty_list(gen())].
 -type depth_function() :: fun((non_neg_integer()) -> gen()).
 -type flatmap_function() :: fun((term()) -> gen()).
--type generate_response() :: {ok, list(term())}
-    | {error, {badarg, string()}, erlang:stacktrace()}
+-type generate_error_response() :: {error, {badarg, string()}, erlang:stacktrace()}
     | {error, timeout}
     | {error, term(), erlang:stacktrace()}
     | {error, term()}.
+-type generate_response() :: {ok, list(term())} | generate_error_response().
+-type generate_into_function(T) :: fun((term(), T) -> T).
+-type generate_into_response(T) :: {ok, T} | generate_error_response().
 -type iterate_function() :: fun((pos_integer(), term()) -> gen()).
 -type map_function() :: fun((term()) -> term()).
 -type predicate_function() :: fun((term()) -> boolean()).
@@ -75,7 +81,7 @@
 
 -record(gen_all, {gens :: nonempty_list(gen())}).
 -record(gen_binary, {gen_size :: gen(), gen_byte :: gen()}).
--record(gen_bitstring, {gen_size :: gen()}).
+-record(gen_bitstring, {gen_size :: gen(), gen_bit :: gen()}).
 -record(gen_choose, {gens :: nonempty_list(gen())}).
 -record(gen_const, {value :: term()}).
 -record(gen_cycle, {id :: reference(), gens :: nonempty_list(gen())}).
@@ -140,8 +146,11 @@ ascii_char() -> integer(33, 126).
 -spec binary_of(gen(), gen()) -> gen().
 binary_of(GenSize, GenByte) -> #gen_binary{gen_size = GenSize, gen_byte = GenByte}.
 
--spec bitstring_of(gen()) -> gen().
-bitstring_of(GenSize) -> #gen_bitstring{gen_size = GenSize}.
+-spec bit() -> gen().
+bit() -> choose([const(0), const(1)]).
+
+-spec bitstring_of(gen(), gen()) -> gen().
+bitstring_of(GenSize, GenBit) -> #gen_bitstring{gen_size = GenSize, gen_bit = GenBit}.
 
 -spec boolean() -> gen().
 boolean() -> choose([const(true), const(false)]).
@@ -249,7 +258,7 @@ generate(Gen, Seed, Count) when is_integer(Count), Count > 0 ->
         Error -> Error
     end.
 
--spec generate(gen(), term(), pos_integer(), fun((term(), term()) -> term()), term()) -> generate_response().
+-spec generate(gen(), term(), pos_integer(), generate_into_function(T), T) -> generate_into_response(T).
 generate(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
     process_flag(trap_exit, true),
     Self = self(),
@@ -317,12 +326,19 @@ generate_one(#gen_binary{gen_size = GenSize, gen_byte = GenByte}) ->
             Bytes = [generate_one_byte(GenByte) || _ <- lists:seq(1, Size)],
             << <<B>> || B <- Bytes >>
     end;
-generate_one(#gen_bitstring{gen_size = GenSize}) ->
+generate_one(#gen_bitstring{gen_size = GenSize, gen_bit = GenBit}) ->
+    GenerateOneBit =
+        fun () ->
+            case generate_one(GenBit) of
+                0 -> 0;
+                1 -> 1;
+                _ -> throw({badarg, "Bit generator must produce 0 or 1"})
+            end
+        end,
     case Size = generate_one_size(GenSize) of
         0 -> <<>>;
         _ ->
-            ZeroOrOne = choose([const(0), const(1)]),
-            Bits = [generate_one(Bit) || Bit <- lists:duplicate(Size, ZeroOrOne)],
+            Bits = [GenerateOneBit() || _ <- lists:seq(1, Size)],
             << <<B:1>> || B <- Bits >>
     end;
 generate_one(#gen_choose{gens = Gens}) ->

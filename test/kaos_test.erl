@@ -82,6 +82,12 @@ ascii_char_test_() ->
 
 binary_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:binary_of(kaos:boolean(), kaos:const(1))).
 
+binary_of_bad_byte_test_() ->
+    ?_assertMatch(
+        {error, {badarg, "Byte generator must provide an integer between 0 and 255"}, _},
+        kaos:generate(kaos:binary_of(kaos:const(1), kaos:const(1_000)), 909, 1)
+    ).
+
 binary_of_test_() ->
     {
         generator,
@@ -112,7 +118,33 @@ binary_of_test_() ->
         end
     }.
 
-bitstring_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:bitstring_of(kaos:boolean())).
+bit_test_() ->
+    Count = 144,
+    {ok, BitCounts } = kaos:generate(
+        kaos:bit(),
+        909,
+        Count,
+        fun (Bit, Acc) -> io:format("~p~n", [Acc]), maps:update_with(Bit, fun (V) -> V + 1 end, 1, Acc) end,
+        #{}
+    ),
+    [
+        {
+            "Results contain only 0 and 1",
+            ?_assertEqual([0, 1], lists:sort(maps:keys(BitCounts)))
+        },
+        {
+            "Counts ad up to samples",
+            ?_assertEqual(Count, maps:get(0, BitCounts) + maps:get(1, BitCounts))
+        }
+    ].
+
+bitstring_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:bitstring_of(kaos:boolean(), kaos:bit())).
+
+bitstring_of_bad_bit_test_() ->
+    ?_assertMatch(
+        {error, {badarg, "Bit generator must produce 0 or 1"}, _},
+        kaos:generate(kaos:bitstring_of(kaos:const(1), kaos:const(1_000)), 909, 1)
+    ).
 
 bitstring_of_test_() ->
     {
@@ -120,7 +152,7 @@ bitstring_of_test_() ->
         fun () ->
             lists:map(
                 fun (Size) ->
-                    {ok, [Bitstring]} = kaos:generate(kaos:bitstring_of(kaos:const(Size)), 909, 1),
+                    {ok, [Bitstring]} = kaos:generate(kaos:bitstring_of(kaos:const(Size), kaos:bit()), 909, 1),
                     [
                         {
                             format_string("Expected bitstring to have ~p bits", [Size]),
@@ -186,7 +218,8 @@ cycle_test_() ->
         ?_assertEqual([1, true, "abc", 1, true, "abc", 1], Over),
         ?_assertEqual([1, true], Under),
         ?_assertEqual([1], One),
-        ?_assertError(function_clause, kaos:cycle([]))
+        ?_assertError(function_clause, kaos:cycle([])),
+        ?_assertError(function_clause, kaos:cycle([1]))
     ].
 
 dict_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:dict_of(kaos:boolean(), kaos:const(2), kaos:const(1))).
