@@ -83,6 +83,139 @@ functions to realize those generators deterministically.
   - `choose/1` selects uniformly among generators. `weighted/1` uses integer
     weights normalized by their GCD and selects proportionally; small samples
     can deviate from long-run ratios.
+
+## Examples
+
+### Hex Color Codes (#RRGGBB)
+
+```erlang
+1> Byte   = kaos:byte().
+2> Hex2   = kaos:map(fun(B) -> io_lib:format("~2.16.0B", [B]) end, Byte).
+3> Color  = kaos:map(fun({R,G,B}) -> lists:flatten([$#, R, G, B]) end,
+3>                  kaos:tuple_of([Hex2, Hex2, Hex2]) ).
+4> Gen    = Color.
+5> {ok, Colors} = kaos:generate(Gen, 909, 3).
+6> Colors.
+["#2AE5E8","#2CC2EA","#F54938"]
+```
+
+### Dates (Month Day, Year)
+
+```erlang
+1> Year  = kaos:integer(2020, 2027).
+2> Month = kaos:integer(1, 12).
+3> Base  = kaos:tuple_of([Year, Month]).
+4> Gen   = kaos:flatmap(
+4>           fun({Y,M}) ->
+4>             {Name,Days} = case M of
+4>               1 -> {"January",31};  2 -> {"February",28}; 3 -> {"March",31};
+4>               4 -> {"April",30};    5 -> {"May",31};      6 -> {"June",30};
+4>               7 -> {"July",31};     8 -> {"August",31};    9 -> {"September",30};
+4>              10 -> {"October",31}; 11 -> {"November",30}; 12 -> {"December",31}
+4>             end,
+4>             Leap = ((Y rem 400) =:= 0) orelse (((Y rem 4) =:= 0) andalso ((Y rem 100) =/= 0)),
+4>             Max = case {M,Leap} of {2,true} -> 29; _ -> Days end,
+4>             kaos:map(fun(D) -> lists:flatten(io_lib:format("~s ~B, ~B", [Name, D, Y])) end,
+4>                      kaos:integer(1, Max))
+4>           end,
+4>           Base).
+5> {ok, Dates} = kaos:generate(Gen, 909, 3).
+6> Dates.
+["June 15, 2022","November 15, 2024","February 1, 2025"]
+```
+
+### URLs
+
+```erlang
+1> Label  = kaos:string_of(kaos:integer(3, 8), kaos:integer($a, $z)).
+2> TLD    = kaos:choose([kaos:const("com"), kaos:const("edu"), kaos:const("net"), kaos:const("io")]).
+3> Host   = kaos:tuple_of([Label, Label, TLD]).
+4> Path   = kaos:list_of(kaos:integer(1, 4), Label).
+5> Scheme = kaos:choose([kaos:const("http"), kaos:const("https")]).
+6> Base   = kaos:tuple_of([Scheme, Host, Path]).
+7> Gen    = kaos:map(fun({Sc,{A,B,Tld},Segs}) ->
+7>                     lists:flatten(io_lib:format("~s://~s.~s.~s/~s",
+7>                       [Sc,
+7>                        binary_to_list(A), binary_to_list(B), Tld,
+7>                        string:join([binary_to_list(S) || S <- Segs], "/")]))
+7>                   end,
+7>                   Base).
+8> {ok, Urls} = kaos:generate(Gen, 909, 3).
+9> Urls.
+["http://swqclnwb.eaeaokov.edu/cia/zzwhj/sie/gbx",
+ "http://cozh.cikojsk.io/pqrbz/piqcu/qjf/uroqkra",
+"http://qaf.ngdusuwj.net/teeswqx"]
+```
+
+### Email Address
+
+```erlang
+1> Label  = kaos:string_of(kaos:integer(3, 10), kaos:integer($a, $z)).
+2> Local  = Label.
+3> Dom    = kaos:tuple_of([Label, Label]).
+4> TLD    = kaos:choose([kaos:const("com"), kaos:const("edu"), kaos:const("net"), kaos:const("io")]).
+5> Base   = kaos:tuple_of([Local, Dom, TLD]).
+6> Gen    = kaos:map(fun({L,{D1,D2},Tld}) ->
+6>                     lists:flatten(io_lib:format("~s@~s.~s.~s",
+6>                       [binary_to_list(L), binary_to_list(D1), binary_to_list(D2), Tld]))
+6>                   end,
+6>                   Base).
+7> {ok, Emails} = kaos:generate(Gen, 909, 3).
+8> Emails.
+["dswqc@nwbleaea.kovnjqcia.net","zwhjgsie@gbxqb.ozhec.net",
+ "ojskrrc@qrbzipiq.uaqjf.net"]
+```
+
+### JWTs
+
+```erlang
+1> Label  = kaos:string_of(kaos:integer(3, 10), kaos:integer($a, $z)).
+2> Iat    = kaos:integer(1700000000, 1800000000).
+3> Base   = kaos:tuple_of([Label, Label, Iat]).  % {sub, aud, iat}
+4> B64URL = fun(Bin) ->
+4>            Str = base64:encode_to_string(Bin),
+4>            S1 = string:replace(Str, "+", "-", all),
+4>            S2 = string:replace(S1, "/", "_", all),
+4>            string:replace(S2, "=", "", all)
+4>          end.
+5> Gen    = kaos:map(fun({Sub, Aud, I}) ->
+5>                     HeaderBin  = list_to_binary("{\"alg\":\"HS256\",\"typ\":\"JWT\"}"),
+5>                     PayloadBin = iolist_to_binary(
+5>                       io_lib:format("{\"sub\":\"~s\",\"aud\":\"~s\",\"iat\":~b}",
+5>                                     [binary_to_list(Sub), binary_to_list(Aud), I])),
+5>                     H64 = B64URL(HeaderBin),
+5>                     P64 = B64URL(PayloadBin),
+5>                     Data = H64 ++ "." ++ P64,
+5>                     Sig = crypto:mac(hmac, sha256, "secret", Data),
+5>                     S64 = B64URL(Sig),
+5>                     lists:flatten(io_lib:format("~s.~s.~s", [H64, P64, S64]))
+5>                   end,
+5>                   Base).
+6> {ok, Tokens} = kaos:generate(Gen, 909, 3).
+7> Tokens.
+["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkc3dxYyIsImF1ZCI6Im53YmxlYWVhIiwiaWF0IjoxNzk2NDM1NzkzfQ.byAv0IXjYP-DOv4dbxZT6D2CUv2kGoqcu8ezHaQ3Brs",
+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJvdm4iLCJhdWQiOiJxY2lhd3p6d2hqIiwiaWF0IjoxNzUwOTIyNTQxfQ.7LSHE_fPVWLCk7d4bCUWCWO4qrXazrmTpIF28PRgYfM",
+ "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpZWdnYnhxIiwiYXVkIjoiY296aCIsImlhdCI6MTc1NDY0NDg3MX0.vIzHpm3o1NdDmRj8FXKDP8TY2raG2Dcf1vheFmzo9lk"]
+```
+
+### Phone Numbers (US format)
+
+```erlang
+1> Dn    = kaos:integer(2, 9).    % leading digit N=2..9
+2> Dx    = kaos:integer(0, 9).    % other digits 0..9
+3> Area  = kaos:tuple_of([Dn, Dx, Dx]).
+4> Exch  = kaos:tuple_of([Dn, Dx, Dx]).
+5> Line  = kaos:tuple_of([Dx, Dx, Dx, Dx]).
+6> Base  = kaos:tuple_of([Area, Exch, Line]).
+7> Gen   = kaos:map(fun({{A1,A2,A3},{E1,E2,E3},{L1,L2,L3,L4}}) ->
+7>                    lists:flatten(io_lib:format("(~B~B~B) ~B~B~B-~B~B~B~B",
+7>                      [A1,A2,A3,E1,E2,E3,L1,L2,L3,L4]))
+7>                  end,
+7>                  Base).
+8> {ok, Phones} = kaos:generate(Gen, 909, 3).
+9> Phones.
+["(414) 664-3345","(748) 468-0251","(980) 608-5343"]
+```
 """.
 
 -export([
