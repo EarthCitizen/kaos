@@ -627,12 +627,12 @@ target size is reached.
 dict_of(GenSize, GenKey, GenValue) -> #gen_dict{gen_size = GenSize, gen_key = GenKey, gen_value = GenValue}.
 
 -doc """
-Returns a generator that filters values from `Gen` using predicate `Fun/1`,
-resampling until `Fun(Value)` returns `true`.
+Returns a generator that filters values from `Gen` using predicate `PredFun/1`,
+resampling until `PredFun(Value)` returns `true`.
 
 #### Parameters
 
-- `Fun` — unary predicate; return `true` to accept a value.
+- `PredFun` — unary predicate; return `true` to accept a value.
 - `Gen` — source generator to sample from.
 
 > Note: If the predicate rarely or never accepts values, generation may take a
@@ -650,7 +650,7 @@ resampling until `Fun(Value)` returns `true`.
 ```
 """.
 -spec filter(predicate_function(), gen()) -> gen().
-filter(Fun, Gen) when is_function(Fun, 1) -> #mod_filter{f = Fun, gen = Gen}.
+filter(PredFun, Gen) when is_function(PredFun, 1) -> #mod_filter{f = PredFun, gen = Gen}.
 
 -doc """
 Returns a generator that maps each value from `Gen` through `Fun/1` to a new
