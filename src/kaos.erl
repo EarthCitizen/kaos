@@ -1045,25 +1045,25 @@ weighted(WeightedGens = [_, _ | _]) ->
     #gen_weighted{max_bound = MaxBound, weighted_gens = BoundedGens}.
 
 -doc """
-Returns a generator that maps each sampled value from `Gen` through `Fun/1`.
+Returns a generator that maps each sampled value from `Gen` through `MapFun/1`.
 
 #### Parameters
 
-- `Fun` — unary function to transform each sampled value.
+- `MapFun` — unary function to transform each sampled value.
 - `Gen` — source generator to sample from.
 
 #### Example
 
 ```erlang
-1> Fun = fun(S) -> S * 10 end.
-2> Gen = kaos:map(Fun, kaos:const(3)).
+1> MapFun = fun(S) -> S * 10 end.
+2> Gen = kaos:map(MapFun, kaos:const(3)).
 3> {ok, Values} = kaos:generate(Gen, 999, 3).
 4> Values.
 [30,30,30]
 ```
 """.
 -spec map(map_function(), gen()) -> gen().
-map(Fun, Gen) when is_function(Fun, 1) -> #mod_map{f = Fun, gen = Gen}.
+map(MapFun, Gen) when is_function(MapFun, 1) -> #mod_map{f = MapFun, gen = Gen}.
 
 default_timeout() -> 30_000.
 
