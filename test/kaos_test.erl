@@ -120,7 +120,7 @@ binary_of_test_() ->
 
 bit_test_() ->
     Count = 144,
-    {ok, BitCounts } = kaos:generate(
+    {ok, BitCounts } = kaos:generate_into(
         kaos:bit(),
         909,
         Count,
@@ -181,7 +181,7 @@ boolean_test_() ->
     ].
 
 byte_test_() ->
-    {ok, AllValues} = kaos:generate(kaos:byte(), 909, 1000, fun (V, Set) -> sets:add_element(V, Set) end, sets:new()),
+    {ok, AllValues} = kaos:generate_into(kaos:byte(), 909, 1000, fun (V, Set) -> sets:add_element(V, Set) end, sets:new()),
     Bools = sets:to_list(sets:map(fun (V) -> is_integer(V) andalso V >= 0 andalso V =< 255 end, AllValues)),
     {
         "All values are integers between 0 and 255",
@@ -463,7 +463,7 @@ weighted_test_() ->
             end,
             lists:map(
                 fun ({ExpectedCounts, WeightedGens}) ->
-                    {ok, SampleCounts} = kaos:generate(kaos:weighted(WeightedGens), 909, Count, CountMerge, #{}),
+                    {ok, SampleCounts} = kaos:generate_into(kaos:weighted(WeightedGens), 909, Count, CountMerge, #{}),
                     Tolerance = 0.0015,
                     [
                         {

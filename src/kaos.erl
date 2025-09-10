@@ -32,7 +32,7 @@
     tuple_of/1,
     weighted/1,
     generate/3,
-    generate/5
+    generate_into/5
 ]).
 
 -export_type([
@@ -246,7 +246,7 @@ map(Fun, Gen) when is_function(Fun, 1) -> #mod_map{f = Fun, gen = Gen}.
 
 -spec generate(gen(), term(), pos_integer()) -> generate_response().
 generate(Gen, Seed, Count) when is_integer(Count), Count > 0 ->
-    Result = generate(
+    Result = generate_into(
         Gen,
         Seed,
         Count,
@@ -258,8 +258,8 @@ generate(Gen, Seed, Count) when is_integer(Count), Count > 0 ->
         Error -> Error
     end.
 
--spec generate(gen(), term(), pos_integer(), generate_into_function(T), T) -> generate_into_response(T).
-generate(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
+-spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T) -> generate_into_response(T).
+generate_into(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
     process_flag(trap_exit, true),
     Self = self(),
     % Need to user spawn monitor
