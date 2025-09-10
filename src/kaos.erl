@@ -653,12 +653,12 @@ resampling until `PredFun(Value)` returns `true`.
 filter(PredFun, Gen) when is_function(PredFun, 1) -> #mod_filter{f = PredFun, gen = Gen}.
 
 -doc """
-Returns a generator that maps each value from `Gen` through `Fun/1` to a new
+Returns a generator that maps each value from `Gen` through `FlatFun/1` to a new
 generator, and samples from that generator (monadic bind).
 
 #### Parameters
 
-- `Fun` — unary function returning a `gen()` for a given value.
+- `FlatFun` — unary function returning a `gen()` for a given value.
 - `Gen` — source generator whose values are transformed.
 
 #### Example
@@ -672,7 +672,7 @@ generator, and samples from that generator (monadic bind).
 ```
 """.
 -spec flatmap(flatmap_function(), gen()) -> gen().
-flatmap(Fun, Gen) when is_function(Fun, 1) -> #mod_flatmap{f = Fun, gen = Gen}.
+flatmap(FlatFun, Gen) when is_function(FlatFun, 1) -> #mod_flatmap{f = FlatFun, gen = Gen}.
 
 -doc """
 Returns a generator that produces a floating-point number in the open interval
