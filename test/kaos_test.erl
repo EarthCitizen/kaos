@@ -259,6 +259,36 @@ flatmap_test_() ->
         ?_assertEqual([["A", "A", "A"], ["A", "A", "A"], ["A", "A", "A"]], Values)
     ].
 
+float_test_() ->
+    {
+        generator,
+        fun () ->
+            Count = 1000,
+            Ranges = [
+                {-9999.0, 9999.0},
+                {0.5, 10.5},
+                {0.00001, 0.5},
+                {-10.1, 0.1},
+                {100_000.0, 200_000.0}
+            ],
+            lists:map(
+                fun ({Min, Max}) ->
+                    Gen = kaos:float(Min, Max),
+
+                    {ok, Values} = kaos:generate(Gen, 707, Count),
+
+                    InRange = unique(fun (E) -> E >= Min andalso E =< Max end, Values),
+                    RangeDescr = format_string("Range ~p to ~p: ", [Min, Max]),
+                    [
+                        {RangeDescr ++ "Expected Count Sampled", ?_assertEqual(Count, length(Values))},
+                        {RangeDescr ++ "All Values in Range", ?_assertEqual([true], InRange)}
+                    ]
+                end,
+                Ranges
+            )
+        end
+    }.
+
 gb_set_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:gb_set_of(kaos:boolean(), kaos:const(1))).
 
 gb_set_of_test_() -> ?_generic_set_test_(fun kaos:gb_set_of/2, fun gb_sets:to_list/1).
@@ -393,6 +423,33 @@ ordset_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:ordset_of(kaos:boole
 
 ordset_of_test_() -> ?_generic_set_test_(fun kaos:ordset_of/2, fun ordsets:to_list/1).
 
+recurse_test_() ->
+    GenSeq = kaos:iterate(fun (N) -> N + 1 end, 1),
+    Run = fun Recur () ->
+        kaos:recurse(
+            fun (Depth) ->
+                case Depth < 3 of
+                    true -> kaos:list_of(kaos:const(2), Recur());
+                    false -> GenSeq
+                end
+            end
+        )
+    end,
+    {ok, [Result]} = kaos:generate((Run()), 101, 1),
+    ?_assertEqual(
+        [
+            [
+                [1,2],
+                [3,4]
+            ],
+            [
+                [5,6],
+                [7,8]
+            ]
+        ],
+        Result
+    ).
+
 set_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:set_of(kaos:boolean(), kaos:const(1))).
 
 set_of_test_() -> ?_generic_set_test_(fun kaos:set_of/2, fun sets:to_list/1).
@@ -404,9 +461,11 @@ shuffle_test_() ->
             lists:map(
                 fun ({Input, Expected}) ->
                     {ok, Actual} = kaos:generate(kaos:shuffle(Input), 909, 3),
-                    ?'_assertEqual'(Expected, Actual)
+                    ?_assertEqual(Expected, Actual)
                 end,
                 [
+                    {[], [[], [], []]},
+                    {[1], [[1], [1], [1]]},
                     {[1, 2, 3], [[3,1,2],[3,2,1],[2,1,3]]},
                     {"abcdefg", ["fgbdaec","bcgadfe","cbdfeag"]}
                 ]
@@ -414,17 +473,23 @@ shuffle_test_() ->
         end
     }.
 
-% string_of_test_() ->
-%     {
-%         generate,
-%         fun () ->
-%             Count = 1_000_000,
-%             % StringGen = kaos:string_of(kaos:const(1), )
-%             [
-
-%             ]
-%         end
-%     }.
+string_of_test_() ->
+    {
+        generator,
+        fun () ->
+            lists:map(
+                fun ({Expected, Size, GenChar}) ->
+                    GenString = kaos:string_of(kaos:const(Size), GenChar),
+                    {ok, [Actual]} = kaos:generate(GenString, 101, 1),
+                    [?_assertEqual(Expected, Actual)]
+                end,
+                [
+                    {<<"AAA">>, 3, kaos:const($A)},
+                    {<<"XYXYXY">>, 6, kaos:cycle([kaos:const($X), kaos:const($Y)])}
+                ]
+            )
+        end
+    }.
 
 tuple_of_test_() ->
     {
