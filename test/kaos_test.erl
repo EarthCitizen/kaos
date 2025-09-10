@@ -205,6 +205,11 @@ const_test_() ->
         ?_assertEqual([1, 1, 1, 1, 1, 1, 1, 1, 1], B)
     ].
 
+choose_from_list_test_() ->
+    Actual = kaos:choose_from_list([1, 2, 3]),
+    Expected = kaos:choose([kaos:const(1), kaos:const(2), kaos:const(3)]),
+    ?_assertEqual(Expected, Actual).
+
 cycle_test_() ->
     Gen = kaos:cycle([
         kaos:const(1),
@@ -511,6 +516,16 @@ weighted_test_() ->
             )
         end
     }.
+
+weighted_from_list_test_() ->
+    Actual = kaos:weighted_from_list([1, 2, 3]),
+    Expected = {3, kaos:choose([kaos:const(1), kaos:const(2), kaos:const(3)])},
+    ?_assertEqual(Expected, Actual).
+
+weighted_from_range_test_() ->
+    Actual = kaos:weighted_from_range(1, 3),
+    Expected = {3, kaos:integer(1, 3)},
+    ?_assertEqual(Expected, Actual).
 
 generate_different_seed_test_() ->
     {ok, Values1} = kaos:generate(kaos:integer(1, 500), 909, 500),

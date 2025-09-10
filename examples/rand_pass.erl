@@ -4,21 +4,14 @@
     pass/1
 ]).
 
-list_to_choose(Elements = [_ | _]) ->
-    kaos:choose(lists:map(fun kaos:const/1, Elements)).
-list_to_weighted(Elements = [_ | _]) ->
-    {length(Elements), list_to_choose(Elements)}.
-range_to_weighted(Lower, Upper) when is_integer(Lower), is_integer(Upper), Lower < Upper ->
-    {abs(Upper - Lower) + 1, kaos:integer(Lower, Upper)}.
-
 gen_pass(RequiredLength) ->
-    GenSpecialW = {_, GenSpecialC} = list_to_weighted([
+    GenSpecialW = {_, GenSpecialC} = kaos:weighted_from_list([
         $!, $@, $#, $$, $%, $^, $&, $*, $(, $), $_, $+, $-, $=
     ]),
-    GenUpperW = {_, GenUpperC} = range_to_weighted($A, $Z),
-    GenLowerW = {_, GenLowerC} = range_to_weighted($a, $z),
-    GenNumberW = {_, GenNumberC} = range_to_weighted($0, $9),
-    GenSymbolW = list_to_weighted([
+    GenUpperW = {_, GenUpperC} = kaos:weighted_from_range($A, $Z),
+    GenLowerW = {_, GenLowerC} = kaos:weighted_from_range($a, $z),
+    GenNumberW = {_, GenNumberC} = kaos:weighted_from_range($0, $9),
+    GenSymbolW = kaos:weighted_from_list([
         $(, $), $_, $+, $-, $=, ${, $}, $[, $], $:, $;, $<, $>, $,, $., $?, $/
     ]),
     GenFiller = kaos:weighted([
@@ -50,5 +43,5 @@ gen_pass(RequiredLength) ->
     ).
 
 pass(RequiredLength) when is_integer(RequiredLength), RequiredLength >= 6 ->
-    {ok, Passes} = kaos:generate(gen_pass(RequiredLength), os:system_time(nanosecond), 12),
+    {ok, Passes} = kaos:generate(gen_pass(RequiredLength), os:system_time(nanosecond), 1),
     io:format("~p~n", Passes).

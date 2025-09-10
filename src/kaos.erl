@@ -228,6 +228,7 @@ functions to realize those generators deterministically.
     boolean/0,
     byte/0,
     choose/1,
+    choose_from_list/1,
     const/1,
     cycle/1,
     dict_of/3,
@@ -249,6 +250,8 @@ functions to realize those generators deterministically.
     string_of/2,
     tuple_of/1,
     weighted/1,
+    weighted_from_list/1,
+    weighted_from_range/2,
     generate/3,
     generate/4,
     generate_into/5,
@@ -285,11 +288,11 @@ functions to realize those generators deterministically.
 }).
 
 -doc """
-List type requiring at least two `gen()` values. Used by functions like
-`all/1`, `choose/1`, `cycle/1`, and `weighted/1` to express that at least two
-generators must be provided.
+List type requiring at least two values of type `T`. Commonly used as
+`nonunary_list(gen())` for generator lists in `all/1`, `choose/1`, `cycle/1`,
+and `weighted/1`.
 """.
--type nonunary_list() :: [gen() | nonempty_list(gen())].
+-type nonunary_list(T) :: [T | nonempty_list(T)].
 -doc """
 Function type used by `recurse/1`. Receives a depth counter (starting at 0) and
 must return a `gen()` to continue generation at that depth.
@@ -402,6 +405,8 @@ via the provided combinators and consumed by `generate*` functions.
     | #mod_map{}
     .
 
+
+
 -doc """
 Returns a generator that produces a list containing one sample from each generator, in order.
 
@@ -418,7 +423,7 @@ Returns a generator that produces a list containing one sample from each generat
 [[100,200],[100,200],[100,200]]
 ```
 """.
--spec all(nonunary_list()) -> gen().
+-spec all(nonunary_list(gen())) -> gen().
 all(Gens = [_, _ | _]) -> #gen_all{gens = Gens}.
 
 -doc """
@@ -560,8 +565,30 @@ produces a sample from it each time.
 ["abc","abc","abc",ok,ok,"abc",1,ok,"abc"]
 ```
 """.
- -spec choose(nonunary_list()) -> gen().
+-spec choose(nonunary_list(gen())) -> gen().
 choose(Gens = [_, _ | _]) when length(Gens) > 1 -> #gen_choose{gens = Gens}.
+
+-doc """
+Returns a generator that uniformly selects one of the terms in `Elements` on
+each sample. This is a convenience wrapper around `choose/1` that accepts raw
+terms instead of generators.
+
+#### Parameters
+
+- `Elements` — list with at least two terms; one is chosen uniformly per sample.
+
+#### Example
+
+```erlang
+1> Gen = kaos:choose_from_list([1, ok, <<"x">>]).
+2> {ok, Values} = kaos:generate(Gen, 909, 7).
+3> Values.
+[<<"x">>,<<"x">>,ok,1,ok,<<"x">>,ok]
+```
+""".
+-spec choose_from_list(nonunary_list(term())) -> gen().
+choose_from_list(Elements = [_, _ | _]) ->
+    kaos:choose(lists:map(fun kaos:const/1, Elements)).
 
 -doc """
 Returns a generator that always produces the given value `A`.
@@ -579,7 +606,7 @@ Returns a generator that always produces the given value `A`.
 [ready,ready,ready]
 ```
 """.
- -spec const(term()) -> gen().
+-spec const(term()) -> gen().
 const(A) -> #gen_const{value = A}.
 
 -doc """
@@ -599,7 +626,7 @@ sample from the next generator each time, and wrapping to the start.
 [1,true,"abc",1,true,"abc",1]
 ```
 """.
--spec cycle(nonunary_list()) -> gen().
+-spec cycle(nonunary_list(gen())) -> gen().
 cycle(Gens = [_, _ | _]) -> #gen_cycle{id = make_ref(), gens = Gens}.
 
 -doc """
@@ -1047,7 +1074,7 @@ uniform within the expanded ranges.
 [8,8,8,8,8,2,2,2,8,8]
 ```
 """.
--spec weighted(nonunary_list()) -> gen().
+-spec weighted(nonunary_list(weighted_gen())) -> gen().
 weighted(WeightedGens = [_, _ | _]) ->
     Weights = lists:map(fun({W, _}) when is_integer(W), W > 0 -> W end, WeightedGens),
     GCD = reduce(fun gcd/2, Weights),
@@ -1065,6 +1092,57 @@ weighted(WeightedGens = [_, _ | _]) ->
     MaxBound = lists:max(Bounds),
     BoundedGens = lists:zipwith(fun(B, {_, G}) -> {B, G} end, Bounds, WeightedGens),
     #gen_weighted{max_bound = MaxBound, weighted_gens = BoundedGens}.
+
+-doc """
+Returns a `{Weight, Gen}` pair suitable for `weighted/1` where `Weight` is the
+number of alternatives in `Elements` and `Gen` selects uniformly from those
+elements. Useful when composing several lists with `weighted/1` and you want
+each list to contribute proportionally to its size.
+
+#### Parameters
+
+- `Elements` — list with at least two terms; duplicates are allowed and will be
+  reflected in the uniform selection within the list.
+
+#### Example
+
+```erlang
+1> Fruits = kaos:weighted_from_list([apple, banana, cherry]).   % weight 3
+2> Digits = kaos:weighted_from_list([0,1,2]).                   % weight 3
+3> Gen = kaos:weighted([Fruits, Digits]).
+4> {ok, Values} = kaos:generate(Gen, 707, 6).
+5> Values.
+[0,apple,1,banana,2,cherry]
+```
+""".
+-spec weighted_from_list(nonunary_list(term())) -> weighted_gen().
+weighted_from_list(Elements = [_, _ | _]) ->
+    {length(Elements), choose_from_list(Elements)}.
+
+-doc """
+Returns a `{Weight, Gen}` pair suitable for `weighted/1` for an inclusive
+integer range. `Weight` equals the count of integers in the range, and `Gen`
+produces integers uniformly from `MinBound..MaxBound`.
+
+#### Parameters
+
+- `MinBound` — lower bound (integer), strictly less than `MaxBound`.
+- `MaxBound` — upper bound (integer), strictly greater than `MinBound`.
+
+#### Example
+
+```erlang
+1> Small = kaos:weighted_from_range(1, 3).   % weight 3 (1,2,3)
+2> Big   = kaos:weighted_from_range(10, 11). % weight 2 (10,11)
+3> Gen = kaos:weighted([Small, Big]).
+4> {ok, Values} = kaos:generate(Gen, 505, 8).
+5> Values.
+[10,1,2,11,3,1,2,3]
+```
+""".
+-spec weighted_from_range(integer(), integer()) -> weighted_gen().
+weighted_from_range(MinBound, MaxBound) when is_integer(MinBound), is_integer(MaxBound), MinBound < MaxBound ->
+    {abs(MaxBound - MinBound) + 1, kaos:integer(MinBound, MaxBound)}.
 
 -doc """
 Returns a generator that maps each sampled value from `Gen` through `MapFun/1`.
