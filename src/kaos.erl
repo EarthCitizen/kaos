@@ -108,8 +108,8 @@ functions to realize those generators deterministically.
 4> Gen   = kaos:flatmap(
 4>           fun({Y,M}) ->
 4>             {Name,Days} = case M of
-4>               1 -> {"January",31};  2 -> {"February",28}; 3 -> {"March",31};
-4>               4 -> {"April",30};    5 -> {"May",31};      6 -> {"June",30};
+4>               1 -> {"January",31};  2 -> {"February",28};  3 -> {"March",31};
+4>               4 -> {"April",30};    5 -> {"May",31};       6 -> {"June",30};
 4>               7 -> {"July",31};     8 -> {"August",31};    9 -> {"September",30};
 4>              10 -> {"October",31}; 11 -> {"November",30}; 12 -> {"December",31}
 4>             end,
@@ -404,8 +404,6 @@ via the provided combinators and consumed by `generate*` functions.
     | #mod_flatmap{}
     | #mod_map{}
     .
-
-
 
 -doc """
 Returns a generator that produces a list containing one sample from each generator, in order.
