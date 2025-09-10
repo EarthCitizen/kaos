@@ -32,7 +32,9 @@
     tuple_of/1,
     weighted/1,
     generate/3,
-    generate_into/5
+    generate/4,
+    generate_into/5,
+    generate_into/6
 ]).
 
 -export_type([
@@ -59,7 +61,7 @@
 }).
 -record(set_trait, {
     new :: fun(() -> term()),
-    size :: fun((term) -> non_neg_integer()),
+    size :: fun((term()) -> non_neg_integer()),
     is_member :: fun((term(), term()) -> boolean()),
     add :: fun((term(), term()) -> term())
 }).
@@ -244,14 +246,21 @@ weighted(WeightedGens = [_, _ | _]) ->
 -spec map(map_function(), gen()) -> gen().
 map(Fun, Gen) when is_function(Fun, 1) -> #mod_map{f = Fun, gen = Gen}.
 
+default_timeout() -> 30_000.
+
 -spec generate(gen(), term(), pos_integer()) -> generate_response().
 generate(Gen, Seed, Count) when is_integer(Count), Count > 0 ->
+    generate(Gen, Seed, Count, default_timeout()).
+
+-spec generate(gen(), term(), pos_integer(), pos_integer()) -> generate_response().
+generate(Gen, Seed, Count, Timeout) when is_integer(Count), Count > 0, is_integer(Timeout), Timeout > 0 ->
     Result = generate_into(
         Gen,
         Seed,
         Count,
         fun (Sample, Acc) -> [Sample | Acc] end,
-        []
+        [],
+        Timeout
     ),
     case Result of
         {ok, SampleList} -> {ok, lists:reverse(SampleList)};
@@ -260,6 +269,10 @@ generate(Gen, Seed, Count) when is_integer(Count), Count > 0 ->
 
 -spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T) -> generate_into_response(T).
 generate_into(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
+    generate_into(Gen, Seed, Count, Merge, Acc, default_timeout()).
+
+-spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T, pos_integer()) -> generate_into_response(T).
+generate_into(Gen, Seed, Count, Merge, Acc, Timeout) when is_integer(Count), Count > 0, is_integer(Timeout), Timeout > 0 ->
     process_flag(trap_exit, true),
     Self = self(),
     % Need to user spawn monitor
@@ -287,7 +300,7 @@ generate_into(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
         {'EXIT', _, Error} -> CleanUpWorker(), {error, Error};
         Error = {error, _, _} -> CleanUpWorker(), Error;
         Result = {ok, _} -> CleanUpWorker(), Result
-    after 30_000 ->
+    after Timeout ->
         CleanUpWorker(),
         {error, timeout}
     end.
