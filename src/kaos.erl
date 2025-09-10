@@ -1204,7 +1204,7 @@ generate_into(Gen, Seed, Count, MergeFun, Acc, Timeout) when is_integer(Count), 
         {error, timeout}
     end.
 
-generate_worker(Gen, Seed, Count, To, MergeFun, Acc) when is_integer(Count), Count > 0 ->
+generate_worker(Gen, Seed, Count, To, MergeFun, InitAcc) when is_integer(Count), Count > 0 ->
     _ = rand:seed(exsss, Seed),
     RunLoop =
         fun Loop(RemainingCount, LoopAcc) ->
@@ -1216,7 +1216,7 @@ generate_worker(Gen, Seed, Count, To, MergeFun, Acc) when is_integer(Count), Cou
             end
         end,
     try
-        To ! {ok, RunLoop(Count, Acc)}
+        To ! {ok, RunLoop(Count, InitAcc)}
     catch
         _:Reason:Stacktrace ->
             To ! {error, Reason, Stacktrace}
