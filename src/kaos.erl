@@ -22,7 +22,7 @@ functions to realize those generators deterministically.
 ## Execution APIs
 
 - `{ok, Samples} = generate(Gen, Seed, Count)` returns a list of values.
-- `{ok, Acc} = generate_into(Gen, Seed, Count, MergeFun, Acc)` returns a
+- `{ok, Acc} = generate_into(Gen, Seed, Count, MergeFun, InitAcc)` returns a
   folded accumulator; the `/6` variant lets you pass a custom timeout. Both
   run generation in a linked worker and return `{error, Reason}` tuples on
   failure or `{error, timeout}` if the worker exceeds the deadline.
@@ -1133,7 +1133,7 @@ Generates `Count` samples from `Gen`, folding each into the accumulator with
 - `Seed` — term to seed the random number generator.
 - `Count` — positive integer; number of samples.
 - `MergeFun` — fun `(Sample, Acc) -> Acc1` to merge each sample.
-- `Acc` — initial accumulator value.
+- `InitAcc` — initial accumulator value.
 
 #### Example
 
@@ -1145,8 +1145,8 @@ Generates `Count` samples from `Gen`, folding each into the accumulator with
 ```
 """.
 -spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T) -> generate_into_response(T).
-generate_into(Gen, Seed, Count, MergeFun, Acc) when is_integer(Count), Count > 0 ->
-    generate_into(Gen, Seed, Count, MergeFun, Acc, default_timeout()).
+generate_into(Gen, Seed, Count, MergeFun, InitAcc) when is_integer(Count), Count > 0 ->
+    generate_into(Gen, Seed, Count, MergeFun, InitAcc, default_timeout()).
 
 -doc """
 Like `generate_into/5` but with a millisecond timeout. Returns `{error, timeout}`
@@ -1158,7 +1158,7 @@ if the worker exceeds `Timeout`.
 - `Seed` — term to seed the random number generator.
 - `Count` — positive integer; number of samples.
 - `MergeFun` — fun `(Sample, Acc) -> Acc1`.
-- `Acc` — initial accumulator value.
+- `InitAcc` — initial accumulator value.
 - `Timeout` — positive integer; milliseconds before timing out.
 
 #### Example
@@ -1171,13 +1171,13 @@ if the worker exceeds `Timeout`.
 ```
 """.
  -spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T, pos_integer()) -> generate_into_response(T).
-generate_into(Gen, Seed, Count, MergeFun, Acc, Timeout) when is_integer(Count), Count > 0, is_integer(Timeout), Timeout > 0 ->
+generate_into(Gen, Seed, Count, MergeFun, InitAcc, Timeout) when is_integer(Count), Count > 0, is_integer(Timeout), Timeout > 0 ->
     process_flag(trap_exit, true),
     Self = self(),
     % Need to user spawn monitor
     WorkerPid = spawn_link(
         fun () ->
-            generate_worker(Gen, Seed, Count, Self, MergeFun, Acc)
+            generate_worker(Gen, Seed, Count, Self, MergeFun, InitAcc)
         end
     ),
     CleanUpMessages =
