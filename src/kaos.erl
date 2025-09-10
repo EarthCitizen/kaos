@@ -1125,28 +1125,28 @@ generate(Gen, Seed, Count, Timeout) when is_integer(Count), Count > 0, is_intege
 
 -doc """
 Generates `Count` samples from `Gen`, folding each into the accumulator with
-`Merge/2`, and returns the final accumulator.
+`MergeFun/2`, and returns the final accumulator.
 
 #### Parameters
 
 - `Gen` — generator to sample from.
 - `Seed` — term to seed the random number generator.
 - `Count` — positive integer; number of samples.
-- `Merge` — fun `(Sample, PrevAcc) -> NewAcc` to merge each sample.
+- `MergeFun` — fun `(Sample, Acc) -> Acc1` to merge each sample.
 - `Acc` — initial accumulator value.
 
 #### Example
 
 ```erlang
-1> Merge = fun(V, S) -> sets:add_element(V, S) end.
-2> {ok, Set} = kaos:generate_into(kaos:integer(1,3), 505, 20, Merge, sets:new()).
+1> MergeFun = fun(V, S) -> sets:add_element(V, S) end.
+2> {ok, Set} = kaos:generate_into(kaos:integer(1,3), 505, 20, MergeFun, sets:new()).
 3> sets:to_list(Set).
 [1,2,3]
 ```
 """.
 -spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T) -> generate_into_response(T).
-generate_into(Gen, Seed, Count, Merge, Acc) when is_integer(Count), Count > 0 ->
-    generate_into(Gen, Seed, Count, Merge, Acc, default_timeout()).
+generate_into(Gen, Seed, Count, MergeFun, Acc) when is_integer(Count), Count > 0 ->
+    generate_into(Gen, Seed, Count, MergeFun, Acc, default_timeout()).
 
 -doc """
 Like `generate_into/5` but with a millisecond timeout. Returns `{error, timeout}`
@@ -1157,27 +1157,27 @@ if the worker exceeds `Timeout`.
 - `Gen` — generator to sample from.
 - `Seed` — term to seed the random number generator.
 - `Count` — positive integer; number of samples.
-- `Merge` — fun `(Sample, Acc) -> Acc1`.
+- `MergeFun` — fun `(Sample, Acc) -> Acc1`.
 - `Acc` — initial accumulator value.
 - `Timeout` — positive integer; milliseconds before timing out.
 
 #### Example
 
 ```erlang
-1> Merge = fun(V, S) -> sets:add_element(V, S) end.
-2> {ok, Set} = kaos:generate_into(kaos:integer(1,3), 505, 20, Merge, sets:new(), 5000).
+1> MergeFun = fun(V, S) -> sets:add_element(V, S) end.
+2> {ok, Set} = kaos:generate_into(kaos:integer(1,3), 505, 20, MergeFun, sets:new(), 5000).
 3> sets:to_list(Set).
 [1,2,3]
 ```
 """.
--spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T, pos_integer()) -> generate_into_response(T).
-generate_into(Gen, Seed, Count, Merge, Acc, Timeout) when is_integer(Count), Count > 0, is_integer(Timeout), Timeout > 0 ->
+ -spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T, pos_integer()) -> generate_into_response(T).
+generate_into(Gen, Seed, Count, MergeFun, Acc, Timeout) when is_integer(Count), Count > 0, is_integer(Timeout), Timeout > 0 ->
     process_flag(trap_exit, true),
     Self = self(),
     % Need to user spawn monitor
     WorkerPid = spawn_link(
         fun () ->
-            generate_worker(Gen, Seed, Count, Self, Merge, Acc)
+            generate_worker(Gen, Seed, Count, Self, MergeFun, Acc)
         end
     ),
     CleanUpMessages =
