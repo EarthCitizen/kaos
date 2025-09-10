@@ -1204,7 +1204,7 @@ generate_into(Gen, Seed, Count, MergeFun, Acc, Timeout) when is_integer(Count), 
         {error, timeout}
     end.
 
-generate_worker(Gen, Seed, Count, To, Merge, Acc) when is_integer(Count), Count > 0 ->
+generate_worker(Gen, Seed, Count, To, MergeFun, Acc) when is_integer(Count), Count > 0 ->
     _ = rand:seed(exsss, Seed),
     RunLoop =
         fun Loop(RemainingCount, LoopAcc) ->
@@ -1212,7 +1212,7 @@ generate_worker(Gen, Seed, Count, To, Merge, Acc) when is_integer(Count), Count 
                 0 -> LoopAcc;
                 _ ->
                     Sample = generate_one(Gen),
-                    Loop(RemainingCount - 1, Merge(Sample, LoopAcc))
+                    Loop(RemainingCount - 1, MergeFun(Sample, LoopAcc))
             end
         end,
     try
