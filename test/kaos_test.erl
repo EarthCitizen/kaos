@@ -291,6 +291,23 @@ integer_test_() ->
         end
     }.
 
+iterate_test_() ->
+    InitState = {1, 3},
+    IterFun = fun ({Count, Product}) -> {Count + 1, Product * 3} end,
+    GenIter = kaos:iterate(IterFun, InitState),
+    {ok, Samples} = kaos:generate(GenIter, 909, 6),
+    ?_assertEqual(
+        [
+            {1, 3},
+            {2, 9},
+            {3, 27},
+            {4, 81},
+            {5, 243},
+            {6, 729}
+        ],
+        Samples
+    ).
+
 list_of_bad_size_test_() ->
     ?_assertMatch(
         {error, {badarg, "Size generator must provide an integer"}, _},
