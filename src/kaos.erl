@@ -1529,8 +1529,9 @@ generate_one(#mod_filter{f = Fun, gen = Gen}) ->
     ValFn();
 generate_one(#mod_map{f = Fun, gen = Gen}) ->
     Fun(generate_one(Gen));
-generate_one(_) ->
-    throw({badarg, "Argument provided does not appear to be a generator"}).
+generate_one(Unknown) ->
+    Message = lists:flatten(io_lib:format("Argument provided does not appear to be a generator: ~p", [Unknown])),
+    throw({badarg, Message}).
 
 generate_one_byte(GenByte) ->
     case Byte = generate_one(GenByte) of
