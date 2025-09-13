@@ -1316,7 +1316,7 @@ if the worker exceeds `Timeout`.
 """.
  -spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T, pos_integer()) -> generate_into_response(T).
 generate_into(Gen, Seed, Count, MergeFun, InitAcc, Timeout) when is_integer(Count), Count > 0, is_integer(Timeout), Timeout > 0 ->
-    process_flag(trap_exit, true),
+    PrevTrapExit = process_flag(trap_exit, true),
     Self = self(),
     % Need to user spawn monitor
     WorkerPid = spawn_link(
@@ -1334,7 +1334,7 @@ generate_into(Gen, Seed, Count, MergeFun, InitAcc, Timeout) when is_integer(Coun
         end,
     CleanUpWorker =
         fun () ->
-            process_flag(trap_exit, false),
+            process_flag(trap_exit, PrevTrapExit),
             unlink(WorkerPid),
             exit(WorkerPid, normal),
             CleanUpMessages()
