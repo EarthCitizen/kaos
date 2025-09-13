@@ -5,7 +5,7 @@ Kaos is a small, composable generator library for Erlang. It provides building
 blocks (generators) to produce random but controlled data and execution
 functions to realize those generators deterministically.
 
-## Core ideas
+## Core Ideas
 
 - Everything you build is a `gen()` value. Use combinators such as
   `const/1`, `integer/2`, `float/2`, `boolean/0`, `choose/1`, `weighted/1`,
@@ -27,7 +27,7 @@ functions to realize those generators deterministically.
   run generation in a linked worker and return `{error, Reason}` tuples on
   failure or `{error, timeout}` if the worker exceeds the deadline.
 
-## Typical use cases
+## Typical Use Cases
 
 - Property testing and fuzzing: build diverse, reproducible inputs for unit
   or property tests without committing to a particular testing framework.
@@ -198,7 +198,7 @@ functions to realize those generators deterministically.
  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJpZWdnYnhxIiwiYXVkIjoiY296aCIsImlhdCI6MTc1NDY0NDg3MX0.vIzHpm3o1NdDmRj8FXKDP8TY2raG2Dcf1vheFmzo9lk"]
 ```
 
-### Phone Numbers (US format)
+### Phone Numbers (US Format)
 
 ```erlang
 1> Dn    = kaos:integer(2, 9).    % leading digit N=2..9
