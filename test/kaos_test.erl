@@ -60,6 +60,8 @@ array_of_test_() ->
         ?_assertEqual(array:get(5, Arr3), 600)
     ].
 
+array_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:array_of(kaos:boolean(), kaos:const(ok))).
+
 ascii_char_test_() ->
     Count = 1000,
     {ok, All} = kaos:generate(kaos:ascii_char(), 101, Count),
@@ -87,6 +89,36 @@ binary_of_bad_byte_test_() ->
         {error, {badarg, "Byte generator must provide an integer between 0 and 255"}, _},
         kaos:generate(kaos:binary_of(kaos:const(1), kaos:const(1_000)), 909, 1)
     ).
+
+binary_of_bad_byte_nonint_test_() ->
+    ?_assertMatch(
+        {error, {badarg, "Byte generator must provide an integer"}, _},
+        kaos:generate(kaos:binary_of(kaos:const(1), kaos:const(foo)), 909, 1)
+    ).
+
+binary_of_bad_byte_oob_test_() ->
+    ResultN999 = kaos:generate(kaos:binary_of(kaos:const(2), kaos:const(-999)), 909, 1),
+    ResultN1 = kaos:generate(kaos:binary_of(kaos:const(2), kaos:const(-1)), 909, 1),
+    Result256 = kaos:generate(kaos:binary_of(kaos:const(2), kaos:const(256)), 909, 1),
+    Result999 = kaos:generate(kaos:binary_of(kaos:const(2), kaos:const(999)), 909, 1),
+    [
+        ?_assertMatch(
+            {error, {badarg, "Byte generator must provide an integer between 0 and 255"}, _},
+            ResultN999
+        ),
+        ?_assertMatch(
+            {error, {badarg, "Byte generator must provide an integer between 0 and 255"}, _},
+            ResultN1
+        ),
+        ?_assertMatch(
+            {error, {badarg, "Byte generator must provide an integer between 0 and 255"}, _},
+            Result256
+        ),
+        ?_assertMatch(
+            {error, {badarg, "Byte generator must provide an integer between 0 and 255"}, _},
+            Result999
+        )
+    ].
 
 binary_of_test_() ->
     {
@@ -491,6 +523,14 @@ string_of_test_() ->
         end
     }.
 
+string_of_bad_codepoint_test_() ->
+    ?_assertMatch(
+        {error, {badarg, "Invalid codepoint given by generator."}, _},
+        kaos:generate(kaos:string_of(kaos:const(2), kaos:const(-1)), 909, 1)
+    ).
+
+string_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:string_of(kaos:boolean(), kaos:const($A))).
+
 tuple_of_test_() ->
     {
         generator,
@@ -582,6 +622,9 @@ weighted_test_() ->
         end
     }.
 
+weighted_bad_weight_test_() ->
+    ?_assertError(function_clause, kaos:weighted([{0, kaos:const(a)}, {1, kaos:const(b)}])).
+
 weighted_from_list_test_() ->
     Actual = kaos:weighted_from_list([1, 2, 3]),
     Expected = {3, kaos:choose([kaos:const(1), kaos:const(2), kaos:const(3)])},
@@ -611,3 +654,21 @@ generate_same_seed_test_() ->
             ?_assertEqual(Values1, Values2)
         }
     ].
+
+generate_into_timeout_test_() ->
+    Slow = kaos:map(fun(X) -> timer:sleep(10), X end, kaos:const(ok)),
+    ?_assertEqual({error, timeout}, kaos:generate_into(Slow, 0, 2, fun(_, A) -> A end, ok, 1)).
+
+generate_into_user_fun_error_test_() ->
+    ?_assertMatch(
+        {error, badmerge, _},
+        kaos:generate_into(kaos:const(1), 0, 3, fun(_, _) -> erlang:error(badmerge) end, [])
+    ).
+
+generate_with_non_generator_test_() ->
+    Res = kaos:generate(not_a_generator, 909, 1),
+    case Res of
+        {error, {badarg, Msg}, _} ->
+            ?_assertMatch(true, string:prefix(Msg, "Argument provided does not appear to be a generator") =/= nomatch);
+        _ -> ?_assert(false)
+    end.
