@@ -1233,13 +1233,36 @@ Generates `Count` samples from `Gen`, folding each into the accumulator with
 - `MergeFun` — fun `(Sample, Acc) -> Acc1` to merge each sample.
 - `InitAcc` — initial accumulator value.
 
-#### Example
+#### Examples
+
+##### Set Accumulation
 
 ```erlang
 1> MergeFun = fun(V, S) -> sets:add_element(V, S) end.
 2> {ok, Set} = kaos:generate_into(kaos:integer(1,3), 505, 20, MergeFun, sets:new()).
 3> sets:to_list(Set).
 [1,2,3]
+```
+
+##### Remote Streaming (Distributed Erlang)
+
+```erlang
+1> %% On the sink node (register a simple receiver)
+1> register(
+1>   sink,
+1>   spawn(fun Loop() ->
+1>     receive
+1>       {sample, V} ->
+1>         io:format("~p~n", [V]),
+1>         Loop();
+1>       stop ->
+1>         ok
+1>     end
+1>   end)
+1> ).
+2> %% On the source node (replace HOST with the sink host)
+3> Merge = fun(V, N) -> {sink, 'sink@HOST'} ! {sample, V}, N + 1 end.
+4> {ok, Count} = kaos:generate_into(kaos:integer(1,3), 909, 1000, Merge, 0).
 ```
 """.
 -spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T) -> generate_into_response(T).
@@ -1259,13 +1282,36 @@ if the worker exceeds `Timeout`.
 - `InitAcc` — initial accumulator value.
 - `Timeout` — positive integer; milliseconds before timing out.
 
-#### Example
+#### Examples
+
+##### Set Accumulation
 
 ```erlang
 1> MergeFun = fun(V, S) -> sets:add_element(V, S) end.
 2> {ok, Set} = kaos:generate_into(kaos:integer(1,3), 505, 20, MergeFun, sets:new(), 5000).
 3> sets:to_list(Set).
 [1,2,3]
+```
+
+##### Remote Streaming (Distributed Erlang)
+
+```erlang
+1> %% On the sink node (register a simple receiver)
+1> register(
+1>   sink,
+1>   spawn(fun Loop() ->
+1>     receive
+1>       {sample, V} ->
+1>         io:format("~p~n", [V]),
+1>         Loop();
+1>       stop ->
+1>         ok
+1>     end
+1>   end)
+1> ).
+2> %% On the source node (replace HOST with the sink host)
+3> Merge = fun(V, N) -> {sink, 'sink@HOST'} ! {sample, V}, N + 1 end.
+4> {ok, Count} = kaos:generate_into(kaos:integer(1,3), 909, 1000, Merge, 0, 5000).
 ```
 """.
  -spec generate_into(gen(), term(), pos_integer(), generate_into_function(T), T, pos_integer()) -> generate_into_response(T).
