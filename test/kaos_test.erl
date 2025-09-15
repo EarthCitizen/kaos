@@ -626,9 +626,14 @@ weighted_bad_weight_test_() ->
     ?_assertError(function_clause, kaos:weighted([{0, kaos:const(a)}, {1, kaos:const(b)}])).
 
 weighted_from_list_test_() ->
-    Actual = kaos:weighted_from_list([1, 2, 3]),
-    Expected = {3, kaos:choose([kaos:const(1), kaos:const(2), kaos:const(3)])},
-    ?_assertEqual(Expected, Actual).
+    MultipleActual = kaos:weighted_from_list([1, 2, 3]),
+    MultipleExpected = {3, kaos:choose([kaos:const(1), kaos:const(2), kaos:const(3)])},
+    SingleActual = kaos:weighted_from_list([ready]),
+    SingleExpected = {1, kaos:const(ready)},
+    [
+        ?_assertEqual(MultipleExpected, MultipleActual),
+        ?_assertEqual(SingleExpected, SingleActual)
+    ].
 
 weighted_from_range_test_() ->
     Actual = kaos:weighted_from_range(1, 3),

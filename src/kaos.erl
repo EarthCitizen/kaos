@@ -1099,8 +1099,9 @@ each list to contribute proportionally to its size.
 
 #### Parameters
 
-- `Elements` — list with at least two terms; duplicates are allowed and will be
-  reflected in the uniform selection within the list.
+- `Elements` — non-empty list of terms; duplicates are allowed and will be
+  reflected in the uniform selection within the list. A singleton `[A]`
+  yields `{1, kaos:const(A)}`.
 
 #### Example
 
@@ -1113,8 +1114,10 @@ each list to contribute proportionally to its size.
 [0,apple,1,banana,2,cherry]
 ```
 """.
--spec weighted_from_list(nonunary_list(term())) -> weighted_gen().
-weighted_from_list(Elements = [_, _ | _]) ->
+-spec weighted_from_list(nonempty_list(term())) -> weighted_gen().
+weighted_from_list([Element]) ->
+    {1, kaos:const(Element)};
+weighted_from_list(Elements = [_ | _]) ->
     {length(Elements), choose_from_list(Elements)}.
 
 -doc """
