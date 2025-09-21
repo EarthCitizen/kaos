@@ -1376,6 +1376,14 @@ gcd(A, B) when is_integer(A), A >= 0, is_integer(B), B >= 0 -> gcd(B, A rem B).
 reduce(_, [L]) -> L;
 reduce(Fun, [L, R | T]) -> reduce(Fun, [Fun(L, R) | T]).
 
+is_valid_code_point(N) when is_integer(N) ->
+    if
+        N >= 0 andalso N =< 16#D7FF -> true;
+        N >= 16#E000 andalso N =< 16#10FFFF -> true;
+        true -> false
+    end;
+is_valid_code_point(_) -> false.
+
 generate_one(#gen_all{gens = Gens}) ->
     lists:map(fun generate_one/1, Gens);
 generate_one(#gen_binary{gen_size = GenSize, gen_byte = GenByte}) ->
@@ -1545,7 +1553,6 @@ generate_one(#gen_recurse{f = Fun}) ->
         end
     end;
 generate_one(#gen_string{gen_size = GenSize, gen_char = GenChar}) ->
-    Result = unicode:characters_to_binary(generate_one(list_of(GenSize, GenChar))),
     case Result of
         {_, _, _} -> throw({badarg, "Invalid codepoint given by generator."});
         _ -> Result

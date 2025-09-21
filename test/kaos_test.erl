@@ -523,11 +523,17 @@ string_of_test_() ->
         end
     }.
 
-string_of_bad_codepoint_test_() ->
-    ?_assertMatch(
-        {error, {badarg, "Invalid codepoint given by generator."}, _},
-        kaos:generate(kaos:string_of(kaos:const(2), kaos:const(-1)), 909, 1)
-    ).
+string_of_bad_code_point_test_() ->
+    [
+        ?_assertMatch(
+            {error, {badarg, "Invalid code point given by generator."}, _},
+            kaos:generate(kaos:string_of(kaos:const(2), kaos:const([$a, $b])), 909, 1)
+        ),
+        ?_assertMatch(
+            {error, {badarg, "Invalid code point given by generator."}, _},
+            kaos:generate(kaos:string_of(kaos:const(2), kaos:const(-1)), 909, 1)
+        )
+    ].
 
 string_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:string_of(kaos:boolean(), kaos:const($A))).
 
