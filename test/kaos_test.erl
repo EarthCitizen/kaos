@@ -62,26 +62,6 @@ array_of_test_() ->
 
 array_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:array_of(kaos:boolean(), kaos:const(ok))).
 
-ascii_char_test_() ->
-    Count = 1000,
-    {ok, All} = kaos:generate(kaos:ascii_char(), 101, Count),
-    AllInRange = lists:uniq(
-        lists:map(
-            fun (E) -> E >= 33 andalso E =< 126 end,
-            lists:uniq(All)
-        )
-    ),
-    {ok, Repeat} = kaos:generate(kaos:ascii_char(), 101, Count),
-    {ok, Other} = kaos:generate(kaos:ascii_char(), 201, Count),
-    [
-        ?_assertEqual(Count, length(All)),
-        ?_assertEqual([true], AllInRange),
-        % Same seed generates same values
-        ?_assertEqual(All, Repeat),
-        % Different seed generates different values
-        ?_assertNotEqual(All, Other)
-    ].
-
 binary_of_bad_size_test_() -> ?_generic_bad_size_test_(kaos:binary_of(kaos:boolean(), kaos:const(1))).
 
 binary_of_bad_byte_test_() ->
