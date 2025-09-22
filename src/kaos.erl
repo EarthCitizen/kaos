@@ -1553,9 +1553,8 @@ generate_one(#gen_recurse{f = Fun}) ->
         end
     end;
 generate_one(#gen_string{gen_size = GenSize, gen_char = GenChar}) ->
-    case Result of
-        {_, _, _} -> throw({badarg, "Invalid codepoint given by generator."});
-        _ -> Result
+                {_, _, _} -> throw(BadCodePointError);
+                _ -> Result
     end;
 generate_one(#gen_tuple{gens = Gens}) ->
     case length(Gens) of
