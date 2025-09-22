@@ -136,7 +136,7 @@ bit_test_() ->
         kaos:bit(),
         909,
         Count,
-        fun (Bit, Acc) -> io:format("~p~n", [Acc]), maps:update_with(Bit, fun (V) -> V + 1 end, 1, Acc) end,
+        fun (Bit, Acc) -> maps:update_with(Bit, fun (V) -> V + 1 end, 1, Acc) end,
         #{}
     ),
     [
@@ -145,7 +145,7 @@ bit_test_() ->
             ?_assertEqual([0, 1], lists:sort(maps:keys(BitCounts)))
         },
         {
-            "Counts ad up to samples",
+            "Counts add up to samples",
             ?_assertEqual(Count, maps:get(0, BitCounts) + maps:get(1, BitCounts))
         }
     ].

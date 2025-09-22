@@ -1,5 +1,5 @@
 {application, kaos, [
-    {description, "An OTP library"},
+    {description, "Composable generator library for Erlang"},
     {vsn, "0.1.0"},
     {registered, []},
     {applications, [

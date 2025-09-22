@@ -2,7 +2,7 @@
 
 # Kaos
 
-A combinator library for Erlang to genrate random values and data structures.
+A combinator library for Erlang to generate random values and data structures.
 
 ## Getting Started
 

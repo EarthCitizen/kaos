@@ -271,7 +271,6 @@ functions to realize those generators deterministically.
     weighted_gen/0
 ]).
 
--import(rand, [uniform/0]).
 
 -record(map_trait, {
     new :: fun(() -> term()),
@@ -1317,7 +1316,6 @@ if the worker exceeds `Timeout`.
 generate_into(Gen, Seed, Count, MergeFun, InitAcc, Timeout) when is_integer(Count), Count > 0, is_integer(Timeout), Timeout > 0 ->
     PrevTrapExit = process_flag(trap_exit, true),
     Self = self(),
-    % Need to user spawn monitor
     WorkerPid = spawn_link(
         fun () ->
             generate_worker(Gen, Seed, Count, Self, MergeFun, InitAcc)
