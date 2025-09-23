@@ -9,5 +9,7 @@
     {env, []},
     {modules, []},
     {licenses, ["MIT"]},
-    {links, []}
+    {links, [
+        {"GitHub", "https://github.com/EarthCitizen/kaos"}
+    ]}
  ]}.

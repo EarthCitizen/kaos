@@ -81,8 +81,12 @@ functions to realize those generators deterministically.
 
 - Weighted and uniform selection
   - `choose/1` selects uniformly among generators. `weighted/1` uses integer
-    weights normalized by their GCD and selects proportionally; small samples
-    can deviate from long-run ratios.
+  weights normalized by their GCD and selects proportionally; small samples
+  can deviate from long-run ratios.
+
+## Guides
+
+See more step-by-step examples in the Examples guide: [Examples](examples.html)
 
 ## Examples
 
